@@ -3,20 +3,26 @@ name: Deploy
 on:
   push:
     branches:
-      - main
+      - main # 只有推送到 main (包含合併) 時才會觸發
+
+  # 允許在 GitHub Actions 頁面手動觸發 (方便測試)
+  workflow_dispatch:
+
+# 賦予 GITHUB_TOKEN 推送權限以部署到 gh-pages 分支
+permissions:
+  contents: write
 
 jobs:
-  build:
-    name: Build
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      # 安裝 PNPM (因為您的專案中有 pnpm-lock.yaml)
+      # 安裝 PNPM (偵測到您有 pnpm-lock.yaml)
       - name: Install pnpm
-        uses: pnpm/action-setup@v3
+        uses: pnpm/action-setup@v4
         with:
           version: 9
 
@@ -32,35 +38,11 @@ jobs:
       - name: Build project
         run: pnpm build
         env:
-          # 在這裡注入您的金鑰，Vite 會在打包時讀取它
-          # 請確認您已在 GitHub Repo Settings > Secrets and variables > Actions 中設定此 Secret
+          #在此注入您的金鑰，Vite 建置時會讀取
           VITE_APP_INDUSTRIAL_DASHBOARD: ${{ secrets.VITE_APP_INDUSTRIAL_DASHBOARD }}
-
-      - name: Upload production-ready build files
-        uses: actions/upload-artifact@v4
-        with:
-          name: production-files
-          path: ./dist
-
-  deploy:
-    name: Deploy
-    needs: build
-    runs-on: ubuntu-latest
-
-    # 賦予 GITHUB_TOKEN 推送權限以部署到 gh-pages
-    permissions:
-      contents: write
-
-    steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: production-files
-          path: ./dist
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
-          # 使用預設的 GITHUB_TOKEN 即可，無需額外設定 DEPLOY_SECRET
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
