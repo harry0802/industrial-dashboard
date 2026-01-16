@@ -117,7 +117,41 @@
   * {
     @apply border-border outline-ring/50;
   }
+
+  /* 🎯 字體優化 - 工業儀表板需要清晰易讀的文字 */
+  html {
+    /* 確保基礎字體大小為 16px (Tailwind 預設) */
+    font-size: 16px;
+    /* 優化閱讀體驗 */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
   body {
     @apply bg-background text-foreground;
+    /* 確保最小字體大小，避免文字過小 */
+    font-size: 1rem; /* 16px */
+    line-height: 1.5;
+  }
+
+  /* 💡 表格文字優化 - 確保數據清晰可讀 */
+  table {
+    /* 表格字體稍微放大 */
+    @apply text-base; /* 16px */
+  }
+
+  td,
+  th {
+    /* 確保表格內容字體不小於 base (16px) */
+    @apply text-base;
+  }
+
+  /* ⚠️ 禁止在關鍵數據使用過小字體 */
+  /* 如需小字體，請使用 text-sm (14px) 而非 text-xs (12px) */
+
+  /* 🧠 數據展示優化 - KPI 數字需要足夠大 */
+  [data-metric-value] {
+    /* 為標記為 metric 的元素確保最小字體 */
+    @apply text-xl;
   }
 }
