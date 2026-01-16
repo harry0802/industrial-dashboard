@@ -86,9 +86,9 @@ const StatCard = React.memo(function StatCard({
   const { TrendIcon, colors } = useStatCardLogic(stat);
 
   return (
-    <Card className={`focus:outline-none ${className || ""}`}>
+    <Card className={`from-primary/5 bg-linear-to-t to-card p-4 rounded-lg focus:outline-none ${className || ""}`}>
       <CardContent>
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between ">
           <div className="space-y-2">
             <p className="text-sm font-medium text-muted-foreground">
               {stat.label}

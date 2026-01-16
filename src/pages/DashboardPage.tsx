@@ -4,6 +4,7 @@ import StatCard from "@/components/dashboard/StatCard";
 import TrendChart from "@/components/dashboard/TrendChart";
 import EquipmentTable from "@/components/dashboard/EquipmentTable";
 import WatchlistPanel from "@/components/dashboard/WatchlistPanel";
+import PerformanceMonitor from "@/components/performance/PerformanceMonitor";
 import {
   mockStats,
   mockChartData,
@@ -21,8 +22,8 @@ import {
 const LAYOUT_STYLES = {
   CONTAINER: "container mx-auto max-w-[1920px] px-4 py-6",
   METRICS_GRID: "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5",
-  MAIN_CONTENT_GRID: "mt-6 grid grid-cols-1 gap-4 lg:grid-cols-4",
-  LEFT_COLUMN: "space-y-4 lg:col-span-3",
+  MAIN_CONTENT_GRID: "mt-6 grid grid-cols-1 gap-4 lg:grid-cols-5",
+  LEFT_COLUMN: "space-y-4 lg:col-span-4",
   RIGHT_COLUMN: "lg:col-span-1",
 } as const;
 
@@ -114,20 +115,31 @@ function DashboardPage() {
         <section aria-label="Key Performance Indicators">
           <MetricsGrid stats={stats} />
         </section>
-
-        {/* Main Content Layout */}
-        <div className={LAYOUT_STYLES.MAIN_CONTENT_GRID}>
+        {/*  Content Layout */}
+        <section className={`${LAYOUT_STYLES.MAIN_CONTENT_GRID} min-h-112.5`}>
           {/* Left Column: Charts & Data Tables */}
           <div className={LAYOUT_STYLES.LEFT_COLUMN}>
             <TrendChart data={chartData} />
-            <EquipmentTable equipments={equipments} />
           </div>
 
           {/* Right Column: Sidebar Panels */}
           <div className={LAYOUT_STYLES.RIGHT_COLUMN}>
             <WatchlistPanel items={watchlist} />
           </div>
-        </div>
+        </section>
+
+        {/*  Content Layout */}
+        <section className={LAYOUT_STYLES.MAIN_CONTENT_GRID}>
+          {/* Left Column: Charts & Data Tables */}
+          <div className={LAYOUT_STYLES.LEFT_COLUMN}>
+            <EquipmentTable equipments={equipments} />
+          </div>
+
+          {/* Right Column: Sidebar Panels */}
+          <div className={LAYOUT_STYLES.RIGHT_COLUMN}>
+            <PerformanceMonitor />
+          </div>
+        </section>
       </main>
     </div>
   );

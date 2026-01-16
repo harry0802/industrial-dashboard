@@ -1,87 +1,110 @@
 /**
  * 📊 效能監控面板
- * 即時顯示 API 請求效能指標的浮動面板
- * 使用 shadcn 組件系統 + MetricCard 語義組件
+ * 即時顯示 API 請求效能指標
  */
 
-import { useState } from "react";
-import { Activity, ChevronDown, ChevronUp } from "lucide-react";
+import { memo, useMemo } from "react";
+import { Activity, AlertCircle } from "lucide-react";
 import { usePerformanceStore } from "@/stores/usePerformanceStore";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { MetricCard } from "@/components/ui/metric-card";
 import { formatDuration, getPerformanceColor } from "@/utils/format";
+import { cn } from "@/lib/utils";
+
+//! =============== 1. 類型定義 ===============
+
+interface PerformanceMonitorProps {
+  className?: string;
+}
+
+interface UsePerformanceReturn {
+  metricEntries: Array<{ name: string; value: number; timestamp: number }>;
+  isEmpty: boolean;
+}
+
+//! =============== 2. 核心邏輯 (Hook) ===============
 
 /**
- * PerformanceMonitor 組件 - 效能監控浮動面板
- *
- * @returns {JSX.Element} PerformanceMonitor 元素
- *
- * 🧠 設計決策:
- * - 使用 MetricCard 組件統一指標展示樣式
- * - 從 utils/format 引入格式化函數 (遵循 DRY 原則)
- * - 保持固定定位 (fixed bottom-4 right-4) 不影響主內容
- *
- * 💡 狀態管理:
- * - isExpanded: 控制面板展開/收起
- * - metrics: 從 Zustand Store 取得效能指標
+ * 效能資料邏輯 Hook
+ * @description 集中處理效能指標排序與判斷
  */
-function PerformanceMonitor() {
-  const [isExpanded, setIsExpanded] = useState(false);
+function usePerformanceLogic(): UsePerformanceReturn {
   const metrics = usePerformanceStore((state) => state.metrics);
 
   // 💡 按時間戳排序指標 (最新的在最上方)
-  const metricEntries = Object.values(metrics).sort(
-    (a, b) => b.timestamp - a.timestamp
-  );
+  const metricEntries = useMemo(() => {
+    return Object.values(metrics).sort((a, b) => b.timestamp - a.timestamp);
+  }, [metrics]);
 
+  const isEmpty = metricEntries.length === 0;
+
+  return { metricEntries, isEmpty };
+}
+
+//! =============== 3. 組件實作 ===============
+
+/**
+ * PerformanceMonitor 組件 - 效能監控面板
+ * @description 與 WatchlistPanel 同樣風格的卡片組件
+ *
+ * 🧠 設計決策:
+ * - 使用與 WatchlistPanel 一致的 Card 結構
+ * - 移除 fixed 定位,改為 flex 佈局容器
+ * - 保持 MetricCard 統一指標展示樣式
+ */
+function PerformanceMonitor({ className }: PerformanceMonitorProps) {
+  const { metricEntries, isEmpty } = usePerformanceLogic();
+
+  // Push Ifs Up: 處理空狀態視圖
+  if (isEmpty) {
+    return (
+      <Card className={cn("h-full", className)}>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Performance Monitor</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex h-[200px] flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
+            <AlertCircle className="h-8 w-8 opacity-50" />
+            <p>無效能資料</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // 渲染主視圖
   return (
-    <div className="fixed bottom-4 right-4 z-50 w-80">
-      <Card className="overflow-hidden shadow-lg">
-        {/* 🎯 Header - 可展開/收起的控制按鈕 */}
-        <Button
-          variant="ghost"
-          className="w-full justify-between px-4 py-3 hover:bg-accent"
-          onClick={() => setIsExpanded(!isExpanded)}
-        >
+    <Card className={cn("flex h-full flex-col", className)}>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Activity className="h-4 w-4" />
-            <span className="font-semibold">效能監控</span>
-            <span className="text-xs text-muted-foreground">
-              ({metricEntries.length})
-            </span>
+            <CardTitle className="text-base">Performance Monitor</CardTitle>
           </div>
-          {isExpanded ? (
-            <ChevronDown className="h-4 w-4" />
-          ) : (
-            <ChevronUp className="h-4 w-4" />
-          )}
-        </Button>
+          <Badge
+            variant="secondary"
+            className="px-2 py-0.5 text-xs font-normal"
+          >
+            {metricEntries.length} Metrics
+          </Badge>
+        </div>
+      </CardHeader>
 
-        {/* 📊 Metrics List - 使用 MetricCard 組件統一樣式 */}
-        {isExpanded && (
-          <div className="max-h-96 overflow-y-auto border-t p-3">
-            {metricEntries.length === 0 ? (
-              <p className="text-center text-sm text-muted-foreground">
-                無監控數據
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {metricEntries.map((metric) => (
-                  <MetricCard
-                    key={metric.name}
-                    label={metric.name}
-                    value={formatDuration(metric.value)}
-                    valueColor={getPerformanceColor(metric.value)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </Card>
-    </div>
+      <CardContent className="flex-1 overflow-y-auto pr-2">
+        <div className="space-y-2">
+          {metricEntries.map((metric) => (
+            <MetricCard
+              key={metric.name}
+              label={metric.name}
+              value={formatDuration(metric.value)}
+              valueColor={getPerformanceColor(metric.value)}
+            />
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
-export default PerformanceMonitor;
+export default memo(PerformanceMonitor);

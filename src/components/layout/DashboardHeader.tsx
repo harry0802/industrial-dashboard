@@ -1,9 +1,16 @@
-import React, { useMemo, useCallback } from "react";
-import { Activity, User, Moon, Sun, type LucideIcon } from "lucide-react";
+import React, { useMemo, useCallback, useState, useEffect } from "react";
+import { Activity, User, Moon, Sun, Languages, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useTranslation } from "react-i18next";
+import { SUPPORTED_LANGUAGES, type SupportedLanguage } from "@/i18n/config";
 
 //! =============== 1. 設定與常量 ===============
 
@@ -46,22 +53,53 @@ interface UseHeaderLogicReturn {
   toggleTheme: () => void;
   ThemeIcon: LucideIcon;
   navItems: typeof NAV_ITEMS;
+  currentTime: string;
+  currentLanguage: string;
+  changeLanguage: (lang: SupportedLanguage) => void;
 }
 
 //! =============== 3. 核心功能實作 (Hook) ===============
 
 /**
  * Header 邏輯 Hook
- * @description 封裝主題切換、國際化與導航資料
+ * @description 封裝主題切換、國際化、即時時間與導航資料
  */
 function useHeaderLogic(): UseHeaderLogicReturn {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { theme, setTheme } = useThemeStore();
+  const [currentTime, setCurrentTime] = useState("");
+
+  //* 即時時間更新
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      setCurrentTime(
+        now.toLocaleTimeString("zh-TW", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: false,
+        })
+      );
+    };
+
+    updateTime();
+    const timer = setInterval(updateTime, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   //* 切換主題邏輯
   const toggleTheme = useCallback(() => {
     setTheme(theme === "light" ? "dark" : "light");
   }, [theme, setTheme]);
+
+  //* 切換語言
+  const changeLanguage = useCallback(
+    (lang: SupportedLanguage) => {
+      i18n.changeLanguage(lang);
+    },
+    [i18n]
+  );
 
   //* 根據當前主題決定圖示，預設為 Sun (Light)
   const ThemeIcon = useMemo(() => {
@@ -74,6 +112,9 @@ function useHeaderLogic(): UseHeaderLogicReturn {
     toggleTheme,
     ThemeIcon,
     navItems: NAV_ITEMS,
+    currentTime,
+    currentLanguage: i18n.language,
+    changeLanguage,
   };
 }
 
@@ -89,7 +130,7 @@ const DashboardHeader = React.memo(function DashboardHeader({
   className,
 }: DashboardHeaderProps) {
   // 1. 使用 Custom Hook 獲取邏輯與資料
-  const { t, theme, toggleTheme, ThemeIcon, navItems } = useHeaderLogic();
+  const { t, theme, toggleTheme, ThemeIcon, navItems, currentTime, currentLanguage, changeLanguage } = useHeaderLogic();
 
   return (
     <header
@@ -121,13 +162,37 @@ const DashboardHeader = React.memo(function DashboardHeader({
           </nav>
         </div>
 
-        {/* Right: Performance Badge + User + Theme */}
+        {/* Right: Time Badge + Language + Theme + User */}
         <div className="flex items-center gap-3">
-          {/* Performance Monitor Badge */}
-          <Badge variant="outline" className="gap-1.5 px-3 py-1">
+          {/* Current Time Badge */}
+          <Badge variant="outline" className="gap-1.5 px-3 py-1 font-mono">
             <Activity className="h-3 w-3" />
-            <span className="text-sm">{t("performance.latency")}: 12ms</span>
+            <span className="text-sm">{currentTime}</span>
           </Badge>
+
+          {/* Language Switcher */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 focus:outline-none"
+              >
+                <Languages className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {Object.entries(SUPPORTED_LANGUAGES).map(([code, name]) => (
+                <DropdownMenuItem
+                  key={code}
+                  onClick={() => changeLanguage(code as SupportedLanguage)}
+                  className={currentLanguage === code ? "bg-accent" : ""}
+                >
+                  {name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* Theme Toggle */}
           <Button

@@ -129,11 +129,11 @@ const TrendChart = React.memo(function TrendChart({
   }
 
   return (
-    <Card className={className}>
+    <Card className={`h-full flex flex-col ${className || ""}`}>
       <CardHeader>
         <CardTitle>Production Trend (24h)</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="**:outline-none **:focus:outline-none **:focus-visible:outline-none">
         {/* 🧠 Heavy Component Optimization: 設定 debounce 以優化視窗縮放效能 */}
         <ResponsiveContainer
           width="100%"
