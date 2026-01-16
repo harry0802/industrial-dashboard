@@ -1,125 +1,113 @@
 /**
  * =====================================
- * 🎨 主題管理 Store (Zustand)
+ * 🎨 Theme Store - 主題狀態管理
  * =====================================
- * 管理深色/淺色模式切換
- * 使用 Zustand 保持狀態管理一致性
+ * 管理深色/淺色模式，並自動同步至 DOM 與 LocalStorage
  */
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
+
+//! =============== 1. 設定與常量 ===============
+
+const THEME_CONFIG = {
+  STORAGE_KEY: "theme-storage",
+  DARK_CLASS: "dark",
+  LIGHT_CLASS: "light",
+} as const;
+
+//! =============== 2. 類型與介面定義 ===============
 
 /**
- * 主題類型定義
+ * 主題類型
+ * @typedef {'light' | 'dark'} Theme
  */
-export type Theme = "light" | "dark" | "system";
+export type Theme = "light" | "dark";
 
 /**
- * 主題狀態定義
+ * 主題狀態介面
+ * @interface ThemeState
  */
 interface ThemeState {
-  /** 當前主題設定 */
+  /** 當前主題 */
   theme: Theme;
-  /** 實際應用的主題 (解析 system 後的結果) */
-  resolvedTheme: "light" | "dark";
-  /** 設定主題 */
+  /**
+   * 設定並套用主題
+   * @param {Theme} theme - 目標主題
+   */
   setTheme: (theme: Theme) => void;
-  /** 初始化主題 (解析 system 偏好) */
-  initTheme: () => void;
+  /**
+   * 切換主題 (Light <-> Dark)
+   * @description 提供便捷的切換方法
+   */
+  toggleTheme: () => void;
 }
 
-/**
- * 獲取系統偏好的主題
- */
-function getSystemTheme(): "light" | "dark" {
-  if (typeof window === "undefined") return "light";
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
-}
+//! =============== 3. 核心功能實作 (DOM Logic) ===============
 
 /**
- * 應用主題到 DOM
+ * 更新 DOM 主題樣式 (純副作用函數)
+ * @param {Theme} theme - 目標主題
+ *
+ * 🧠 實作細節:
+ * - 使用 classList.toggle 消除 if/else
+ * - 設定 color-scheme 以支援原生 UI (捲軸、checkbox 等)
  */
-function applyTheme(theme: "light" | "dark") {
+function updateDomTheme(theme: Theme): void {
   const root = document.documentElement;
+  const isDark = theme === "dark";
 
-  // 移除舊的 class
-  root.classList.remove("light", "dark");
+  // 1. Class 切換 (Tailwind Dark Mode 核心)
+  root.classList.toggle(THEME_CONFIG.DARK_CLASS, isDark);
+  // 可選：如果你明確需要 light class，取消下行註解
+  // root.classList.toggle(THEME_CONFIG.LIGHT_CLASS, !isDark);
 
-  // 添加新的 class
-  root.classList.add(theme);
-
-  // 設定 data attribute (供 CSS 使用)
+  // 2. Data Attribute (供 CSS Selector 使用)
   root.setAttribute("data-theme", theme);
+
+  // 3. 原生 UI 配色 (讓捲軸和原生控制項變色)
+  root.style.colorScheme = theme;
 }
 
+//! =============== 4. Store 實作 (Zustand) ===============
+
 /**
- * 主題管理 Zustand Store
+ * 主題管理 Store
  *
  * 🧠 設計決策:
- * - 使用 persist middleware 保存用戶偏好到 localStorage
- * - 支援 system 模式自動跟隨系統主題
- * - 監聽系統主題變化並自動更新
- *
- * 💡 使用方式:
- * - setTheme: 切換主題 ('light' | 'dark' | 'system')
- * - initTheme: 初始化時調用，解析 system 偏好
- *
- * @example
- * // 切換主題
- * useThemeStore.getState().setTheme('dark')
- *
- * @example
- * // 讀取當前主題
- * const theme = useThemeStore(state => state.theme)
+ * - 使用 persist middleware 自動讀寫 localStorage
+ * - onRehydrateStorage: 確保頁面重整後自動套用樣式，無需 useEffect
  */
 export const useThemeStore = create<ThemeState>()(
   persist(
     (set, get) => ({
-      theme: "system",
-      resolvedTheme: "light",
+      theme: "light", // 預設值
 
-      setTheme: (theme: Theme) => {
+      setTheme: (theme) => {
         set({ theme });
-
-        // 解析實際要應用的主題
-        const resolvedTheme =
-          theme === "system" ? getSystemTheme() : theme;
-
-        set({ resolvedTheme });
-        applyTheme(resolvedTheme);
+        updateDomTheme(theme);
       },
 
-      initTheme: () => {
-        const { theme } = get();
-        const resolvedTheme =
-          theme === "system" ? getSystemTheme() : theme;
-
-        set({ resolvedTheme });
-        applyTheme(resolvedTheme);
-
-        // 監聽系統主題變化
-        if (theme === "system") {
-          const mediaQuery = window.matchMedia(
-            "(prefers-color-scheme: dark)"
-          );
-
-          const handleChange = () => {
-            if (get().theme === "system") {
-              const newTheme = getSystemTheme();
-              set({ resolvedTheme: newTheme });
-              applyTheme(newTheme);
-            }
-          };
-
-          mediaQuery.addEventListener("change", handleChange);
-        }
+      toggleTheme: () => {
+        const nextTheme = get().theme === "light" ? "dark" : "light";
+        // 複用 setTheme 以保持邏輯單一
+        get().setTheme(nextTheme);
       },
     }),
     {
-      name: "theme-storage", // localStorage key
-      partialize: (state) => ({ theme: state.theme }), // 只保存 theme
+      name: THEME_CONFIG.STORAGE_KEY,
+      storage: createJSONStorage(() => localStorage),
+
+      // ✨ Magic: 當 Storage 讀取完畢後，立即套用主題
+      // 這消除了手動呼叫 initTheme 的需求
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          updateDomTheme(state.theme);
+        }
+      },
+
+      // 只持久化 theme 欄位，避免保存函數
+      partialize: (state) => ({ theme: state.theme } as ThemeState),
     }
   )
 );

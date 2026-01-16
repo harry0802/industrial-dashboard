@@ -5,14 +5,16 @@
  * 應用主入口 - 初始化所有全局設定
  */
 
-import { StrictMode, useEffect } from "react";
+import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "./index.css";
 import "./i18n/config"; // 初始化 i18n
 import App from "./App.tsx";
-import { useThemeStore } from "./stores/useThemeStore";
 
+// 🧠 設定 QueryClient
+// 預設 retry: 1 避免失敗時無限重試
+// refetchOnWindowFocus: false 避免切換視窗時頻繁請求
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -23,28 +25,15 @@ const queryClient = new QueryClient({
 });
 
 /**
- * ThemeInitializer - 主題初始化組件
- *
- * 🧠 設計決策:
- * - 在應用渲染前初始化主題，避免閃爍
- * - 使用 useEffect 在客戶端執行
+ * 應用程式渲染
+ * * 💡 主題初始化說明:
+ * 由於 useThemeStore 使用了 persist middleware 的 onRehydrateStorage，
+ * 主題會在 Zustand 啟動時自動應用到 DOM，因此此處無需額外的初始化組件。
  */
-function ThemeInitializer({ children }: { children: React.ReactNode }) {
-  const initTheme = useThemeStore((state) => state.initTheme);
-
-  useEffect(() => {
-    initTheme();
-  }, [initTheme]);
-
-  return <>{children}</>;
-}
-
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <ThemeInitializer>
-        <App />
-      </ThemeInitializer>
+      <App />
     </QueryClientProvider>
   </StrictMode>
 );

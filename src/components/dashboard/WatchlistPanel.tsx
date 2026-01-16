@@ -5,13 +5,7 @@
  * 顯示重點設備的即時監控數據
  */
 
-import {
-  Thermometer,
-  Gauge,
-  Wind,
-  Waves,
-  Clock,
-} from "lucide-react";
+import { Thermometer, Gauge, Wind, Waves } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import type { WatchlistItem } from "@/mocks/data";
@@ -46,55 +40,46 @@ function getTypeIcon(type: WatchlistItem["type"]) {
  * @returns WatchlistPanel 元素
  *
  * 🧠 設計決策:
- * - 模仿 Dashboard-01 的 "Recent Sales" 列表樣式
+ * - Compact Mode: 針對 25% 寬度欄位優化
  * - 使用 Avatar 顯示監控類型圖示
  * - 右側顯示即時數值與狀態顏色
  *
  * 💡 視覺層次:
- * - 左側: Avatar (圖示) + Name
- * - 右側: Value + Unit (帶狀態顏色)
- * - 底部: Last Update 時間
+ * - 第一行: Machine Name (truncate 防止破版)
+ * - 第二行: Status | Temperature (小字體)
+ * - 緊湊間距: space-y-3 代替 space-y-4
  */
 function WatchlistPanel({ items }: WatchlistPanelProps) {
   return (
     <Card className="h-full">
-      <CardHeader>
-        <CardTitle>Watchlist Monitor</CardTitle>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">Watchlist Monitor</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
+      <CardContent className="pt-0">
+        <div className="space-y-3">
           {items.map((item) => {
             const Icon = getTypeIcon(item.type);
             const statusColor = getWatchlistStatusColor(item.status);
 
             return (
-              <div
-                key={item.id}
-                className="flex items-start justify-between gap-4"
-              >
-                <div className="flex items-start gap-3">
-                  <Avatar className="h-10 w-10">
-                    <AvatarFallback className="bg-muted">
-                      <Icon className="h-5 w-5 text-muted-foreground" />
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium leading-none">
-                      {item.name}
-                    </p>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Clock className="h-3 w-3" />
-                      <span>{item.lastUpdate}</span>
-                    </div>
+              <div key={item.id} className="flex items-center gap-2">
+                <Avatar className="h-8 w-8 shrink-0">
+                  <AvatarFallback className="bg-muted">
+                    <Icon className="h-4 w-4 text-muted-foreground" />
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium leading-tight">
+                    {item.name}
+                  </p>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="capitalize">{item.type}</span>
+                    <span>|</span>
+                    <span className={statusColor}>
+                      {item.value}
+                      {item.unit}
+                    </span>
                   </div>
-                </div>
-                <div className="text-right">
-                  <p className={`text-sm font-bold ${statusColor}`}>
-                    {item.value} {item.unit}
-                  </p>
-                  <p className="text-xs capitalize text-muted-foreground">
-                    {item.type}
-                  </p>
                 </div>
               </div>
             );
