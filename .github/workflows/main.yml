@@ -1,48 +1,46 @@
-name: Deploy
+name: CI Quality Check
 
+# 當推送到 main 分支，或是有人發起 Pull Request 時觸發
 on:
   push:
-    branches:
-      - main # 只有推送到 main (包含合併) 時才會觸發
-
-  # 允許在 GitHub Actions 頁面手動觸發 (方便測試)
-  workflow_dispatch:
-
-# 賦予 GITHUB_TOKEN 推送權限以部署到 gh-pages 分支
-permissions:
-  contents: write
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
-  build-and-deploy:
+  check-and-build:
+    name: Lint & Build Test
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      # 安裝 PNPM (偵測到您有 pnpm-lock.yaml)
+      # 安裝 PNPM
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 9
 
+      # 設定 Node 環境
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: "pnpm"
 
+      # 安裝套件
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build project
+      # 1. 執行 ESLint 檢查 (檢查程式碼風格與潛在錯誤)
+      - name: Run ESLint
+        run: pnpm run lint
+
+      # 2. 執行建置測試 (確保 TypeScript 沒有錯誤，且能成功打包)
+      # 注意：這裡只是「試跑」建置來檢查錯誤，不會真的部署出去
+      - name: Run Build Test
         run: pnpm build
         env:
-          #在此注入您的金鑰，Vite 建置時會讀取
+          # 即使只是試跑建置，如果程式碼中有用到 import.meta.env，最好還是注入變數避免報錯
           VITE_APP_INDUSTRIAL_DASHBOARD: ${{ secrets.VITE_APP_INDUSTRIAL_DASHBOARD }}
-
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
