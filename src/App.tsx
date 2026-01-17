@@ -6,7 +6,7 @@
  * 當前模式: UI Prototype (Mock Data)
  */
 
-import DashboardPage from "@/pages/DashboardPage";
+import DashboardPage from "@/features/dashboard";
 
 import { ErrorBoundary } from "react-error-boundary";
 import ErrorFallback from "@/components/layout/ErrorFallback";

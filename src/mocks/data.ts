@@ -31,6 +31,7 @@ export interface ChartDataPoint {
   production: number;
   yield: number;
   efficiency: number;
+  defectCount: number;
 }
 
 /**
@@ -120,6 +121,7 @@ export const mockChartData: ChartDataPoint[] = Array.from(
       production: Math.floor(Math.random() * 300 + 400), // 400-700
       yield: Math.floor(Math.random() * 5 + 95), // 95-100
       efficiency: Math.floor(Math.random() * 15 + 80), // 80-95
+      defectCount: Math.floor(Math.random() * 40 + 10), // 10-50
     };
   }
 );
