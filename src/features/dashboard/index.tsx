@@ -1,0 +1,57 @@
+import DashboardHeader from "@/components/layout/DashboardHeader";
+import { MetricsGrid, WatchlistPanel, PerformanceMonitor } from "./components";
+import { ProductionTrendFeature } from "./components/ProductionTrendFeature";
+import { useDashboardData } from "./hooks/useDashboardData";
+import { EquipmentDataGrid } from "@/features/equipment";
+
+/**
+ * 🎯 DashboardPage - 工業營運儀表板
+ *
+ * Feature-Sliced Design 架構
+ * - components/: Dashboard 專屬組件
+ * - charts/: 圖表模組 (TrendChart)
+ * - hooks/: 資料獲取邏輯
+ *
+ * 架構設計:
+ * - Header: 固定頂部導航
+ * - MetricsGrid: 頂部關鍵指標 (5欄)
+ * - MainContent: 左右分欄佈局 (Charts + Tables vs Panels)
+ */
+function DashboardPage() {
+  const { stats, chartData } = useDashboardData();
+
+  return (
+    <div className="min-h-screen bg-background">
+      <DashboardHeader />
+
+      <main className="container mx-auto max-w-[1920px] px-4 py-6">
+        {/* Top Metrics Section */}
+        <section aria-label="Key Performance Indicators">
+          <MetricsGrid stats={stats} />
+        </section>
+
+        {/* Trend Chart + Watchlist - 完全等高 */}
+        <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-5 ">
+          <div className="lg:col-span-4 h-full">
+            <ProductionTrendFeature data={chartData} />
+          </div>
+          <div className="lg:col-span-1 h-full">
+            <WatchlistPanel />
+          </div>
+        </section>
+
+        {/* Equipment Table + Performance Monitor */}
+        <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-5">
+          <div className="space-y-4 lg:col-span-4">
+            <EquipmentDataGrid />
+          </div>
+          <div className="lg:col-span-1">
+            <PerformanceMonitor />
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}
+
+export default DashboardPage;

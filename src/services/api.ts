@@ -1,5 +1,5 @@
-import ky, { type KyInstance } from 'ky';
-import { usePerformanceStore } from '@/stores/usePerformanceStore';
+import ky, { type KyInstance } from "ky";
+import { usePerformanceStore } from "@/stores/usePerformanceStore";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -10,10 +10,10 @@ const requestTimings = new Map<string, number>();
 const extractApiName = (url: string): string => {
   try {
     const pathname = new URL(url).pathname;
-    const segments = pathname.split('/').filter(Boolean);
-    return segments.join('/') || 'unknown';
+    const segments = pathname.split("/").filter(Boolean);
+    return segments.join("/") || "unknown";
   } catch {
-    return 'unknown';
+    return "unknown";
   }
 };
 
@@ -23,7 +23,7 @@ export const apiClient: KyInstance = ky.create({
   timeout: 30000,
   retry: {
     limit: 2,
-    methods: ['get'],
+    methods: ["get"],
     statusCodes: [408, 413, 429, 500, 502, 503, 504],
   },
   hooks: {
@@ -31,7 +31,7 @@ export const apiClient: KyInstance = ky.create({
       (request) => {
         const key = request.url;
         requestTimings.set(key, performance.now());
-        console.log('[API] Request started:', key);
+        console.log("[API] Request started:", key);
       },
     ],
     afterResponse: [
@@ -43,7 +43,11 @@ export const apiClient: KyInstance = ky.create({
           const duration = performance.now() - startTime;
           const apiName = extractApiName(request.url);
 
-          console.log('[API] Response received:', apiName, `${duration.toFixed(0)}ms`);
+          console.log(
+            "[API] Response received:",
+            apiName,
+            `${duration.toFixed(0)}ms`
+          );
 
           // 💡 即使是錯誤回應也記錄，避免倖存者偏差
           usePerformanceStore.getState().recordMetric(apiName, duration);
@@ -65,7 +69,11 @@ export const apiClient: KyInstance = ky.create({
           const duration = performance.now() - startTime;
           const apiName = extractApiName(request.url);
 
-          console.log('[API] Error received:', apiName, `${duration.toFixed(0)}ms`);
+          console.log(
+            "[API] Error received:",
+            apiName,
+            `${duration.toFixed(0)}ms`
+          );
 
           usePerformanceStore.getState().recordMetric(apiName, duration);
           requestTimings.delete(key);
