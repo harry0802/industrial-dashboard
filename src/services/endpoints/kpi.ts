@@ -1,4 +1,4 @@
-import { apiClient } from '../api';
+import { apiClient } from "../api";
 
 interface KPIItem {
   value: number;
@@ -15,5 +15,5 @@ export interface KPIData {
 }
 
 export const fetchKPI = async (): Promise<KPIData> => {
-  return apiClient.get('api/stats').json<KPIData>();
+  return apiClient.get("api/stats").json<KPIData>();
 };

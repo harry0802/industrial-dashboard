@@ -32,10 +32,10 @@ function DashboardPage() {
 
         {/* Trend Chart + Watchlist - 固定高度 480px */}
         <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-5">
-          <div className="lg:col-span-4 h-[480px]">
+          <div className="lg:col-span-4 h-[500px]">
             <ProductionTrendFeature className="h-full" />
           </div>
-          <div className="lg:col-span-1 h-[480px]">
+          <div className="lg:col-span-1 h-[500px]">
             <WatchlistPanel className="h-full" />
           </div>
         </section>

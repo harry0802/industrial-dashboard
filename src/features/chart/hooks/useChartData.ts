@@ -1,8 +1,11 @@
 /**
  * Chart Data Hook
+ *
  * - 初始載入 24h 歷史資料
  * - Column → Row 資料轉換 + Reader Time 測量
  * - 可配置的 Polling 即時更新
+ *
+ * 💡 Zod 驗證已在 API 層處理，此處專注資料轉換
  */
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -53,107 +56,38 @@ const FIELD_MAPPING: Record<string, keyof ChartDataPoint> = {
 //! =============== 3. 純函式：資料轉換 ===============
 
 /**
- * 建立空白資料點
- * @param time - 時間標籤
- */
-function createEmptyDataPoint(time: string): ChartDataPoint {
-  return {
-    time,
-    production: 0,
-    defectCount: 0,
-    downtime: 0,
-    yield: 0,
-    efficiency: 0,
-  };
-}
-
-/**
- * 建立 Dataset 查找表
- * @param datasets - API 回傳的 datasets 陣列
- */
-function buildDatasetMap(
-  datasets: ChartHistoryResponse["datasets"]
-): Map<string, number[]> {
-  const map = new Map<string, number[]>();
-
-  for (const dataset of datasets) {
-    const internalKey = FIELD_MAPPING[dataset.label];
-    if (internalKey) {
-      map.set(internalKey as string, dataset.data);
-    }
-  }
-
-  return map;
-}
-
-/**
- * 從查找表填充資料點
- * @param point - 目標資料點
- * @param datasetMap - Dataset 查找表
- * @param index - 資料索引
- */
-function fillDataPointFromMap(
-  point: ChartDataPoint,
-  datasetMap: Map<string, number[]>,
-  index: number
-): ChartDataPoint {
-  return {
-    ...point,
-    production: datasetMap.get("production")?.[index] ?? 0,
-    defectCount: datasetMap.get("defectCount")?.[index] ?? 0,
-    downtime: datasetMap.get("downtime")?.[index] ?? 0,
-    yield: datasetMap.get("yield")?.[index] ?? 0,
-    efficiency: datasetMap.get("efficiency")?.[index] ?? 0,
-  };
-}
-
-/**
- * 從即時資料填充資料點
- * @param point - 目標資料點
- * @param datasets - 即時 datasets 陣列
- */
-function fillDataPointFromRealtime(
-  point: ChartDataPoint,
-  datasets: ChartRealtimeResponse["datasets"]
-): ChartDataPoint {
-  const result = { ...point };
-
-  for (const dataset of datasets) {
-    const key = FIELD_MAPPING[dataset.label];
-    if (key && key in result) {
-      (result as Record<string, string | number>)[key] = dataset.value;
-    }
-  }
-
-  return result;
-}
-
-/**
  * 記錄 Reader Time 到效能監控
- * @param startTime - 開始時間戳
  */
 function recordReaderTime(startTime: number): void {
   const duration = performance.now() - startTime;
   usePerformanceStore.getState().recordMetric("Chart Reader Time", duration);
 }
 
-//! =============== 4. 轉換函式 ===============
-
 /**
  * Column-based → Row-based 轉換
- * @description 將 API 回傳的欄位式資料轉換為 Recharts 需要的列式資料
- * @param response - API 歷史資料回應
+ *
+ * 💡 簡化版：直接用 reduce 建立查找表，避免過度抽象
  */
 function transformToRows(response: ChartHistoryResponse): ChartDataPoint[] {
   const startTime = performance.now();
-
   const { labels, datasets } = response;
-  const datasetMap = buildDatasetMap(datasets);
 
-  //* Push Fors Down: 批次處理所有資料點
-  const result = labels.map((time, index) =>
-    fillDataPointFromMap(createEmptyDataPoint(time), datasetMap, index)
-  );
+  //* 建立 label → internalKey → data[] 的查找表
+  const dataMap = datasets.reduce<Record<string, number[]>>((acc, dataset) => {
+    const key = FIELD_MAPPING[dataset.label];
+    if (key) acc[key] = dataset.data;
+    return acc;
+  }, {});
+
+  //* 批次轉換為 Row-based
+  const result = labels.map((time, i) => ({
+    time,
+    production: dataMap.production?.[i] ?? 0,
+    defectCount: dataMap.defectCount?.[i] ?? 0,
+    downtime: dataMap.downtime?.[i] ?? 0,
+    yield: dataMap.yield?.[i] ?? 0,
+    efficiency: dataMap.efficiency?.[i] ?? 0,
+  }));
 
   recordReaderTime(startTime);
   return result;
@@ -161,29 +95,37 @@ function transformToRows(response: ChartHistoryResponse): ChartDataPoint[] {
 
 /**
  * 合併即時資料點到現有資料
- * @description 追加新點到末端，移除最舊的點以維持視窗大小
- * @param existingData - 現有資料陣列
- * @param realtime - 即時資料回應
- * @param maxDataPoints - 最大資料點數
+ *
+ * 💡 簡化版：直接用 reduce 建立新資料點
  */
 function mergeRealtimePoint(
   existingData: ChartDataPoint[],
   realtime: ChartRealtimeResponse,
-  maxDataPoints: number
+  maxDataPoints: number,
 ): ChartDataPoint[] {
   const startTime = performance.now();
 
-  const newPoint = fillDataPointFromRealtime(
-    createEmptyDataPoint(realtime.label),
-    realtime.datasets
+  //* 建立新資料點
+  const newPoint = realtime.datasets.reduce<ChartDataPoint>(
+    (point, dataset) => {
+      const key = FIELD_MAPPING[dataset.label];
+      if (key) (point as Record<string, string | number>)[key] = dataset.value;
+      return point;
+    },
+    {
+      time: realtime.label,
+      production: 0,
+      defectCount: 0,
+      downtime: 0,
+      yield: 0,
+      efficiency: 0,
+    },
   );
 
   //* 追加並維持視窗大小
   const updated = [...existingData, newPoint];
   const result =
-    updated.length > maxDataPoints
-      ? updated.slice(updated.length - maxDataPoints)
-      : updated;
+    updated.length > maxDataPoints ? updated.slice(-maxDataPoints) : updated;
 
   recordReaderTime(startTime);
   return result;
@@ -211,7 +153,7 @@ function mergeRealtimePoint(
  * });
  */
 export function useChartData(
-  options: UseChartDataOptions = {}
+  options: UseChartDataOptions = {},
 ): UseChartDataReturn {
   const {
     pollingInterval = DEFAULT_POLLING_INTERVAL,
@@ -223,7 +165,13 @@ export function useChartData(
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   //* 主查詢：歷史資料
-  const { data: rawData, isLoading, isError, error, refetch } = useQuery({
+  const {
+    data: rawData,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: QUERY_KEY,
     queryFn: async () => {
       const response = await fetchChartHistory();

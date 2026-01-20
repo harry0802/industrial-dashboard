@@ -1,13 +1,14 @@
 /**
  * Production Trend Feature
  *
- * - 整合真實 API (24h 歷史 + 5 分鐘即時更新)
- * - 使用 ZoomableChart 實現縮放功能
+ * 使用 Chart Compound Components 重構
+ * - IoC: Reset 按鈕放在 Header
  * - 三種圖表模式：Line / Area / Bar
  * - 雙 Y 軸策略：左軸 (產量)，右軸 (小數值 + 百分比)
  */
 
 import { useState, useMemo, useCallback, useRef } from "react";
+import { XAxis, YAxis } from "recharts";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -25,10 +26,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Download, RefreshCw, AlertCircle } from "lucide-react";
-import {
-  ZoomableChart,
-  type SeriesConfig,
-} from "@/components/charts/ZoomableChart";
+import { Chart, type ChartConfig } from "@/components/chart";
 import { useChartData, type UseChartDataOptions } from "../hooks/useChartData";
 import { cn } from "@/lib/utils";
 import { toPng, toSvg } from "html-to-image";
@@ -50,60 +48,13 @@ const CHART_MODES: Record<ChartMode, string> = {
   bar: "Bar Chart",
 };
 
-//* Series 顏色與 Y 軸映射
-const SERIES_CONFIG = {
-  production: {
-    color: "#3b82f6",
-    name: "產量 (pcs)",
-    yAxisId: "left" as const,
-  },
-  defectCount: {
-    color: "#ef4444",
-    name: "不良品 (pcs)",
-    yAxisId: "right" as const,
-  },
-  downtime: { color: "#f59e0b", name: "停機 (次)", yAxisId: "right" as const },
-  yield: { color: "#10b981", name: "良率 (%)", yAxisId: "right" as const },
-  efficiency: {
-    color: "#8b5cf6",
-    name: "稼動率 (%)",
-    yAxisId: "right" as const,
-  },
-} as const;
-
-//* Series 渲染順序 (後面的在上層)
-const SERIES_ORDER = [
-  "production",
-  "downtime",
-  "defectCount",
-  "efficiency",
-  "yield",
-] as const;
-
-//! =============== 純函數 ===============
-
-function buildSeriesConfig(chartMode: ChartMode): SeriesConfig[] {
-  return SERIES_ORDER.map((key) => ({
-    dataKey: key,
-    type: chartMode,
-    color: SERIES_CONFIG[key].color,
-    name: SERIES_CONFIG[key].name,
-    yAxisId: SERIES_CONFIG[key].yAxisId,
-    fillOpacity: chartMode === "area" ? getFillOpacity(key) : 0.9,
-    strokeWidth: 2,
-  }));
-}
-
-function getFillOpacity(key: string): number {
-  const opacityMap: Record<string, number> = {
-    production: 0.4,
-    downtime: 0.35,
-    defectCount: 0.3,
-    efficiency: 0.25,
-    yield: 0.2,
-  };
-  return opacityMap[key] ?? 0.3;
-}
+const CHART_CONFIG: ChartConfig = {
+  production: { label: "產量 (pcs)", color: "#3b82f6" },
+  defectCount: { label: "不良品 (pcs)", color: "#ef4444" },
+  downtime: { label: "停機 (次)", color: "#f59e0b" },
+  yield: { label: "良率 (%)", color: "#10b981" },
+  efficiency: { label: "稼動率 (%)", color: "#8b5cf6" },
+};
 
 //! =============== 子組件 ===============
 
@@ -161,14 +112,8 @@ export function ProductionTrendFeature({ className, chartOptions }: Props) {
   const [isExporting, setIsExporting] = useState(false);
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
-  //* 根據模式動態生成 Series 配置
-  const seriesConfig = useMemo(() => buildSeriesConfig(chartMode), [chartMode]);
-
   //* X 軸時間格式化
-  const formatXAxis = useCallback((value: string) => {
-    // 假設 value 是 "HH:mm" 格式，保持原樣
-    return value;
-  }, []);
+  const formatXAxis = useCallback((value: string) => value, []);
 
   //* 匯出功能
   const handleExportPNG = useCallback(async () => {
@@ -210,6 +155,33 @@ export function ProductionTrendFeature({ className, chartOptions }: Props) {
     }
   }, []);
 
+  // X 軸配置 - memoized
+  const xAxisConfig = useMemo(
+    () => ({
+      dataKey: "time",
+      tickLine: false,
+      axisLine: false,
+      tickMargin: 10,
+      minTickGap: 32,
+      tickFormatter: formatXAxis,
+      stroke: "hsl(var(--muted-foreground))",
+      fontSize: 12,
+    }),
+    [formatXAxis],
+  );
+
+  // Y 軸配置 - memoized
+  const yAxisBaseConfig = useMemo(
+    () => ({
+      tickLine: false,
+      axisLine: false,
+      tickMargin: 10,
+      stroke: "hsl(var(--muted-foreground))",
+      fontSize: 12,
+    }),
+    [],
+  );
+
   // Guard Clauses
   if (isLoading) return <ChartSkeleton />;
   if (isError) return <ChartError error={error} onRetry={refetch} />;
@@ -217,7 +189,7 @@ export function ProductionTrendFeature({ className, chartOptions }: Props) {
     return (
       <Card className={className}>
         <CardContent className="pt-6">
-          <div className="flex items-center justify-center h-[105] text-muted-foreground">
+          <div className="flex items-center justify-center h-[105px] text-muted-foreground">
             目前沒有圖表資料
           </div>
         </CardContent>
@@ -226,72 +198,106 @@ export function ProductionTrendFeature({ className, chartOptions }: Props) {
   }
 
   return (
-    <Card className={cn("overflow-hidden", className)}>
-      <CardContent className="pt-4 pb-2">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-semibold">生產趨勢分析</h3>
+    <Chart.Root data={data} config={CHART_CONFIG} xDataKey="time">
+      <Card className={cn("overflow-hidden", className)}>
+        <CardContent className="pt-4 pb-2">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-semibold">生產趨勢分析</h3>
 
-          <div className="flex items-center gap-2">
-            {/* Chart Type Select */}
-            <Select
-              value={chartMode}
-              onValueChange={(v) => setChartMode(v as ChartMode)}
-            >
-              <SelectTrigger className="w-[140px] h-8">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {(Object.keys(CHART_MODES) as ChartMode[]).map((mode) => (
-                  <SelectItem key={mode} value={mode}>
-                    {CHART_MODES[mode]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2">
+              {/* 🔥 IoC: Reset 按鈕現在可以自由放在 Header */}
+              <Chart.ResetButton className="h-8 text-xs" />
 
-            {/* Export Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  disabled={isExporting}
-                  title="匯出"
-                >
-                  <Download className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleExportPNG}>
-                  匯出 PNG
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExportSVG}>
-                  匯出 SVG
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              {/* Chart Type Select */}
+              <Select
+                value={chartMode}
+                onValueChange={(v) => setChartMode(v as ChartMode)}
+              >
+                <SelectTrigger className="w-[140px] h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(CHART_MODES) as ChartMode[]).map((mode) => (
+                    <SelectItem key={mode} value={mode}>
+                      {CHART_MODES[mode]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Export Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    disabled={isExporting}
+                    title="匯出"
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleExportPNG}>
+                    匯出 PNG
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportSVG}>
+                    匯出 SVG
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
-        </div>
 
-        {/* Chart */}
-        <div ref={chartContainerRef}>
-          <ZoomableChart
-            data={data}
-            xDataKey="time"
-            series={seriesConfig}
-            height={380}
-            showBrush
-            showResetButton
-            dualYAxis={{
-              leftLabel: "產量",
-              rightLabel: "數值 / %",
-            }}
-            xAxisFormatter={formatXAxis}
-          />
-        </div>
-      </CardContent>
-    </Card>
+          {/* Chart */}
+          <div ref={chartContainerRef}>
+            <Chart.Canvas height={380}>
+              {/* Axes - 使用原生 Recharts */}
+              <XAxis {...xAxisConfig} />
+              <YAxis yAxisId="left" {...yAxisBaseConfig} />
+              <YAxis yAxisId="right" orientation="right" {...yAxisBaseConfig} />
+
+              {/* Series - 順序決定渲染層級 (後面的在上層) */}
+              <Chart.Series
+                dataKey="production"
+                type={chartMode}
+                yAxisId="left"
+                fillOpacity={chartMode === "area" ? 0.4 : 0.9}
+              />
+              <Chart.Series
+                dataKey="downtime"
+                type={chartMode}
+                yAxisId="right"
+                fillOpacity={chartMode === "area" ? 0.35 : 0.9}
+              />
+              <Chart.Series
+                dataKey="defectCount"
+                type={chartMode}
+                yAxisId="right"
+                fillOpacity={chartMode === "area" ? 0.3 : 0.9}
+              />
+              <Chart.Series
+                dataKey="efficiency"
+                type={chartMode}
+                yAxisId="right"
+                fillOpacity={chartMode === "area" ? 0.25 : 0.9}
+              />
+              <Chart.Series
+                dataKey="yield"
+                type={chartMode}
+                yAxisId="right"
+                fillOpacity={chartMode === "area" ? 0.2 : 0.9}
+              />
+
+              <Chart.Tooltip />
+              <Chart.Legend enableToggle />
+              <Chart.Brush previewDataKey="production" />
+            </Chart.Canvas>
+          </div>
+        </CardContent>
+      </Card>
+    </Chart.Root>
   );
 }

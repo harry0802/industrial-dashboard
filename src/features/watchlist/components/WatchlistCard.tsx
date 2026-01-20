@@ -14,7 +14,12 @@ interface WatchlistCardProps {
   dragOverlay?: boolean; // 💡 當作為 DragOverlay 渲染時
 }
 
-function WatchlistCardComponent({ type, data, onRemove, dragOverlay = false }: WatchlistCardProps) {
+function WatchlistCardComponent({
+  type,
+  data,
+  onRemove,
+  dragOverlay = false,
+}: WatchlistCardProps) {
   const {
     attributes,
     listeners,
@@ -35,11 +40,12 @@ function WatchlistCardComponent({ type, data, onRemove, dragOverlay = false }: W
         opacity: isDragging ? 0.5 : 1,
       };
 
-  const statusColor = data?.status === "error"
-    ? "bg-red-500/10 text-red-500 border-red-500/20"
-    : data?.status === "warning"
-    ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
-    : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300";
+  const statusColor =
+    data?.status === "error"
+      ? "bg-red-500/10 text-red-500 border-red-500/20"
+      : data?.status === "warning"
+        ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+        : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300";
 
   return (
     <div
@@ -49,7 +55,7 @@ function WatchlistCardComponent({ type, data, onRemove, dragOverlay = false }: W
         "group flex items-center gap-2 rounded-lg border bg-card p-2 shadow-sm transition-all h-14",
         dragOverlay
           ? "cursor-grabbing shadow-2xl scale-105 opacity-90"
-          : "hover:shadow-md"
+          : "hover:shadow-md",
       )}
     >
       {/* 拖曳手柄 */}
@@ -58,7 +64,9 @@ function WatchlistCardComponent({ type, data, onRemove, dragOverlay = false }: W
         {...(dragOverlay ? {} : attributes)}
         className={cn(
           "text-muted-foreground/30 hover:text-foreground flex items-center shrink-0",
-          dragOverlay ? "cursor-grabbing" : "cursor-grab active:cursor-grabbing"
+          dragOverlay
+            ? "cursor-grabbing"
+            : "cursor-grab active:cursor-grabbing",
         )}
       >
         <GripVertical className="h-4 w-4" />
@@ -79,7 +87,7 @@ function WatchlistCardComponent({ type, data, onRemove, dragOverlay = false }: W
             variant="outline"
             className={cn(
               "flex items-center gap-0.5 font-mono text-xs px-1.5",
-              statusColor
+              statusColor,
             )}
           >
             <span className="font-bold">{data.temperature.toFixed(1)}</span>
@@ -90,7 +98,7 @@ function WatchlistCardComponent({ type, data, onRemove, dragOverlay = false }: W
             variant="outline"
             className={cn(
               "flex items-center gap-0.5 font-mono text-xs px-1.5",
-              statusColor
+              statusColor,
             )}
           >
             <span className="font-bold">{data.rpm.toLocaleString()}</span>
