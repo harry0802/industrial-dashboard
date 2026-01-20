@@ -203,7 +203,8 @@ export default function WatchlistMonitor({
                   strategy={verticalListSortingStrategy}
                 >
                   {watchedTypes.map((type) => {
-                    const item = items.find((i) => i.name === type);
+                    // 🧠 用 item.id 比對 (API 回傳的 id 等於查詢的機型名稱)
+                    const item = items.find((i) => i.id === type);
                     return (
                       <WatchlistCard
                         key={type}
@@ -221,7 +222,7 @@ export default function WatchlistMonitor({
                     {activeType ? (
                       <WatchlistCard
                         type={activeType}
-                        data={items.find((i) => i.name === activeType)}
+                        data={items.find((i) => i.id === activeType)}
                         onRemove={() => {}}
                         dragOverlay
                       />

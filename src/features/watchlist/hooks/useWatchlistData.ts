@@ -29,20 +29,19 @@ export function useWatchlistData() {
       // 1️⃣ 呼叫 API (發送機型名稱作為 ids 參數)
       const equipments = await submitWatchlist(watchedTypes);
 
-      // 2️⃣ 轉換為 WatchlistItem
-      const items = equipments.map(equipmentToWatchlistItem);
-
-      // 3️⃣ ✨ 去重：每個機型取第一筆資料
-      const typeMap = new Map<string, WatchlistItem>();
-      items.forEach((item) => {
-        if (!typeMap.has(item.name)) {
-          typeMap.set(item.name, item);
+      // 2️⃣ 建立 查詢ID → WatchlistItem 映射
+      // 🧠 API 回傳的 equipment.id 是我們傳入的查詢值 (機型名稱)
+      //    equipment.machine 可能是不同的值，所以用 id 來比對
+      const idToItemMap = new Map<string, WatchlistItem>();
+      for (const eq of equipments) {
+        if (!idToItemMap.has(eq.id)) {
+          idToItemMap.set(eq.id, equipmentToWatchlistItem(eq));
         }
-      });
+      }
 
-      // 4️⃣ ✨ 依照 Store 的 watchedTypes 順序排序 (使用機型名稱)
+      // 3️⃣ 依照 Store 的 watchedTypes 順序排序
       const sortedItems = watchedTypes
-        .map((type) => typeMap.get(type))
+        .map((type) => idToItemMap.get(type))
         .filter(Boolean) as WatchlistItem[];
 
       return sortedItems;

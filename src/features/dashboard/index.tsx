@@ -1,6 +1,6 @@
 import DashboardHeader from "@/components/layout/DashboardHeader";
 import { MetricsGrid, WatchlistPanel, PerformanceMonitor } from "./components";
-import { ProductionTrendFeature } from "./components/ProductionTrendFeature";
+import { ProductionTrendFeature } from "@/features/chart";
 import { useDashboardData } from "./hooks/useDashboardData";
 import { EquipmentDataGrid } from "@/features/equipment";
 
@@ -18,7 +18,7 @@ import { EquipmentDataGrid } from "@/features/equipment";
  * - MainContent: 左右分欄佈局 (Charts + Tables vs Panels)
  */
 function DashboardPage() {
-  const { stats, chartData } = useDashboardData();
+  const { stats } = useDashboardData();
 
   return (
     <div className="min-h-screen bg-background">
@@ -30,13 +30,13 @@ function DashboardPage() {
           <MetricsGrid stats={stats} />
         </section>
 
-        {/* Trend Chart + Watchlist - 完全等高 */}
-        <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-5 ">
-          <div className="lg:col-span-4 h-full">
-            <ProductionTrendFeature data={chartData} />
+        {/* Trend Chart + Watchlist - 固定高度 480px */}
+        <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-5">
+          <div className="lg:col-span-4 h-[480px]">
+            <ProductionTrendFeature className="h-full" />
           </div>
-          <div className="lg:col-span-1 h-full">
-            <WatchlistPanel />
+          <div className="lg:col-span-1 h-[480px]">
+            <WatchlistPanel className="h-full" />
           </div>
         </section>
 

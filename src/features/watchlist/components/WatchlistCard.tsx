@@ -46,9 +46,9 @@ function WatchlistCardComponent({ type, data, onRemove, dragOverlay = false }: W
       ref={dragOverlay ? undefined : setNodeRef}
       style={style}
       className={cn(
-        "group flex items-center gap-3 rounded-lg border bg-card p-2 shadow-sm transition-all h-14",
+        "group flex items-center gap-2 rounded-lg border bg-card p-2 shadow-sm transition-all h-14",
         dragOverlay
-          ? "cursor-grabbing shadow-2xl scale-105 opacity-90" // ✨ 拖曳中樣式
+          ? "cursor-grabbing shadow-2xl scale-105 opacity-90"
           : "hover:shadow-md"
       )}
     >
@@ -61,27 +61,24 @@ function WatchlistCardComponent({ type, data, onRemove, dragOverlay = false }: W
           dragOverlay ? "cursor-grabbing" : "cursor-grab active:cursor-grabbing"
         )}
       >
-        <GripVertical className="h-5 w-5" />
+        <GripVertical className="h-4 w-4" />
       </div>
 
       {/* 機型 Icon */}
       <Factory className="h-4 w-4 text-muted-foreground shrink-0" />
 
-      {/* 機型名稱 */}
-      <span className="font-semibold text-sm truncate min-w-0">
+      {/* 機型名稱 - 允許壓縮 */}
+      <span className="font-semibold text-sm truncate min-w-0 flex-1">
         {type}
       </span>
 
-      {/* Spacer */}
-      <div className="flex-1" />
-
       {/* 數值 Badges */}
       {data ? (
-        <>
+        <div className="flex items-center gap-1.5 shrink-0">
           <Badge
             variant="outline"
             className={cn(
-              "flex shrink-0 items-center gap-1 font-mono text-xs",
+              "flex items-center gap-0.5 font-mono text-xs px-1.5",
               statusColor
             )}
           >
@@ -92,14 +89,14 @@ function WatchlistCardComponent({ type, data, onRemove, dragOverlay = false }: W
           <Badge
             variant="outline"
             className={cn(
-              "flex shrink-0 items-center gap-1 font-mono text-xs",
+              "flex items-center gap-0.5 font-mono text-xs px-1.5",
               statusColor
             )}
           >
             <span className="font-bold">{data.rpm.toLocaleString()}</span>
             <span className="text-[10px] opacity-70">RPM</span>
           </Badge>
-        </>
+        </div>
       ) : (
         <span className="text-xs text-muted-foreground shrink-0">No data</span>
       )}
