@@ -25,7 +25,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Download, RefreshCw, AlertCircle } from "lucide-react";
-import { ZoomableChart, type SeriesConfig } from "@/components/charts/ZoomableChart";
+import {
+  ZoomableChart,
+  type SeriesConfig,
+} from "@/components/charts/ZoomableChart";
 import { useChartData, type UseChartDataOptions } from "../hooks/useChartData";
 import { cn } from "@/lib/utils";
 import { toPng, toSvg } from "html-to-image";
@@ -49,15 +52,33 @@ const CHART_MODES: Record<ChartMode, string> = {
 
 //* Series 顏色與 Y 軸映射
 const SERIES_CONFIG = {
-  production: { color: "#3b82f6", name: "產量 (pcs)", yAxisId: "left" as const },
-  defectCount: { color: "#ef4444", name: "不良品 (pcs)", yAxisId: "right" as const },
+  production: {
+    color: "#3b82f6",
+    name: "產量 (pcs)",
+    yAxisId: "left" as const,
+  },
+  defectCount: {
+    color: "#ef4444",
+    name: "不良品 (pcs)",
+    yAxisId: "right" as const,
+  },
   downtime: { color: "#f59e0b", name: "停機 (次)", yAxisId: "right" as const },
   yield: { color: "#10b981", name: "良率 (%)", yAxisId: "right" as const },
-  efficiency: { color: "#8b5cf6", name: "稼動率 (%)", yAxisId: "right" as const },
+  efficiency: {
+    color: "#8b5cf6",
+    name: "稼動率 (%)",
+    yAxisId: "right" as const,
+  },
 } as const;
 
 //* Series 渲染順序 (後面的在上層)
-const SERIES_ORDER = ["production", "downtime", "defectCount", "efficiency", "yield"] as const;
+const SERIES_ORDER = [
+  "production",
+  "downtime",
+  "defectCount",
+  "efficiency",
+  "yield",
+] as const;
 
 //! =============== 純函數 ===============
 
@@ -134,7 +155,8 @@ function ChartError({
 //! =============== 主組件 ===============
 
 export function ProductionTrendFeature({ className, chartOptions }: Props) {
-  const { data, isLoading, isError, error, refetch } = useChartData(chartOptions);
+  const { data, isLoading, isError, error, refetch } =
+    useChartData(chartOptions);
   const [chartMode, setChartMode] = useState<ChartMode>("area");
   const [isExporting, setIsExporting] = useState(false);
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -195,7 +217,7 @@ export function ProductionTrendFeature({ className, chartOptions }: Props) {
     return (
       <Card className={className}>
         <CardContent className="pt-6">
-          <div className="flex items-center justify-center h-[420px] text-muted-foreground">
+          <div className="flex items-center justify-center h-[105] text-muted-foreground">
             目前沒有圖表資料
           </div>
         </CardContent>
@@ -242,8 +264,12 @@ export function ProductionTrendFeature({ className, chartOptions }: Props) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleExportPNG}>匯出 PNG</DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExportSVG}>匯出 SVG</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportPNG}>
+                  匯出 PNG
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportSVG}>
+                  匯出 SVG
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

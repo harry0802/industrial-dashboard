@@ -1,14 +1,4 @@
-/**
- * ZoomableChart - 可縮放圖表組件
- *
- * 參考 shadcn-chart-brush 實作
- * - 圖表顯示全部資料，由 Brush 的 startIndex/endIndex 控制可見範圍
- * - 拖曳選取 (ReferenceArea) 更新 range
- * - 支援 Line / Area / Bar 三種模式
- * - 支援雙 Y 軸 (左軸大數值、右軸百分比)
- */
-
-import { useState, useCallback, useMemo, useRef } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import {
   ComposedChart,
   Line,
@@ -19,23 +9,20 @@ import {
   CartesianGrid,
   Brush,
   ReferenceArea,
+  ResponsiveContainer,
 } from "recharts";
 import { Button } from "@/components/ui/button";
 import { RotateCcw } from "lucide-react";
-import type { ChartConfig } from "@/components/ui/chart";
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
   ChartLegend,
   ChartLegendContent,
+  type ChartConfig,
 } from "@/components/ui/chart";
-//! =============== 型別定義 ===============
 
-//* Recharts mouse event type
-interface ChartMouseEvent {
-  activeLabel?: string | number;
-}
+//! =============== 型別定義 ===============
 
 export interface SeriesConfig {
   dataKey: string;
@@ -55,87 +42,208 @@ export interface ZoomableChartProps<T extends Record<string, unknown>> {
   height?: number;
   showBrush?: boolean;
   showResetButton?: boolean;
-  dualYAxis?: {
-    leftLabel: string;
-    rightLabel: string;
-  };
+  dualYAxis?: boolean;
   xAxisFormatter?: (value: string) => string;
   className?: string;
-}
-
-interface SelectionState {
-  left: number | null;
-  right: number | null;
+  zoomSpeed?: number;
 }
 
 interface RangeState {
-  left: number;
-  right: number;
+  startIndex: number;
+  endIndex: number;
 }
 
-//! =============== 常量配置 ===============
-
-const CHART_MARGIN = { top: 10, right: 30, left: 0, bottom: 0 };
-const BRUSH_HEIGHT = 50;
+interface SelectionState {
+  startX: string | null;
+  endX: string | null;
+}
 
 //! =============== 工具函數 ===============
 
-//* 將 SeriesConfig[] 轉為 shadcn ChartConfig
-function buildChartConfig(series: SeriesConfig[]): ChartConfig {
-  const config: ChartConfig = {};
-  for (const s of series) {
-    config[s.dataKey] = {
-      label: s.name,
-      color: s.color,
-    };
-  }
-  return config;
+/**
+ * 節流函數 - 控制函數執行頻率
+ */
+function throttle<T extends (...args: any[]) => void>(
+  func: T,
+  limit: number,
+): (...args: Parameters<T>) => void {
+  let inThrottle: boolean = false;
+
+  return function (this: any, ...args: Parameters<T>) {
+    if (!inThrottle) {
+      func.apply(this, args);
+      inThrottle = true;
+      setTimeout(() => (inThrottle = false), limit);
+    }
+  };
 }
 
-//! =============== 純函數：渲染 Series ===============
+/**
+ * RequestAnimationFrame 節流 - 用於視覺更新
+ */
+function rafThrottle<T extends (...args: any[]) => void>(
+  func: T,
+): (...args: Parameters<T>) => void {
+  let rafId: number | null = null;
 
-function renderSeries(config: SeriesConfig): React.ReactElement {
-  const commonProps = {
-    key: config.dataKey,
-    dataKey: config.dataKey,
-    name: config.name,
-    yAxisId: config.yAxisId ?? "left",
-    isAnimationActive: false,
+  return function (this: any, ...args: Parameters<T>) {
+    if (rafId !== null) return;
+
+    rafId = requestAnimationFrame(() => {
+      func.apply(this, args);
+      rafId = null;
+    });
   };
+}
 
-  switch (config.type) {
-    case "line":
-      return (
-        <Line
-          {...commonProps}
-          type="monotone"
-          stroke={`var(--color-${config.dataKey})`}
-          strokeWidth={config.strokeWidth ?? 2}
-          strokeDasharray={config.strokeDasharray}
-          dot={false}
-        />
-      );
-    case "area":
-      return (
-        <Area
-          {...commonProps}
-          type="monotone"
-          stroke={`var(--color-${config.dataKey})`}
-          fill={`var(--color-${config.dataKey})`}
-          fillOpacity={config.fillOpacity ?? 0.3}
-          strokeWidth={config.strokeWidth ?? 2}
-        />
-      );
-    case "bar":
-      return (
-        <Bar
-          {...commonProps}
-          fill={`var(--color-${config.dataKey})`}
-          fillOpacity={config.fillOpacity ?? 0.9}
-          maxBarSize={50}
-        />
-      );
+//! =============== 純計算邏輯 ===============
+
+const MIN_ZOOM_ITEMS = 5;
+
+/**
+ * 計算縮放後的範圍 (支援滑鼠焦點縮放)
+ */
+function calculateNewRange(
+  currentRange: RangeState,
+  totalLength: number,
+  zoomAmount: number,
+  focusPercentage: number,
+): RangeState {
+  const { startIndex, endIndex } = currentRange;
+
+  // 防止範圍小於最小限制且還在繼續放大
+  if (endIndex - startIndex <= MIN_ZOOM_ITEMS && zoomAmount > 0) {
+    return currentRange;
   }
+
+  // zoomAmount > 0 : 放大 (縮小範圍)
+  // zoomAmount < 0 : 縮小 (擴大範圍)
+  const newStart = Math.max(
+    0,
+    startIndex + Math.floor(zoomAmount * focusPercentage),
+  );
+
+  const newEnd = Math.min(
+    totalLength - 1,
+    endIndex - Math.ceil(zoomAmount * (1 - focusPercentage)),
+  );
+
+  // 防呆：如果計算結果導致交叉，則不更新
+  if (newStart >= newEnd - MIN_ZOOM_ITEMS) {
+    return currentRange;
+  }
+
+  return { startIndex: newStart, endIndex: newEnd };
+}
+
+//! =============== 優化後的 Hook ===============
+
+function useWheelZoom(
+  ref: React.RefObject<HTMLDivElement>,
+  range: RangeState,
+  onRangeChange: (newRange: RangeState) => void,
+  totalLength: number,
+  zoomSpeed: number = 0.1,
+) {
+  const lastTouchDistance = useRef<number | null>(null);
+
+  // 穩定的回調引用，避免 effect 重新訂閱
+  const rangeRef = useRef(range);
+  const onRangeChangeRef = useRef(onRangeChange);
+
+  useEffect(() => {
+    rangeRef.current = range;
+  }, [range]);
+
+  useEffect(() => {
+    onRangeChangeRef.current = onRangeChange;
+  }, [onRangeChange]);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element || totalLength === 0) return;
+
+    // 通用縮放處理 - 使用 ref 避免閉包陷阱
+    const performZoom = (direction: number, clientX: number) => {
+      const currentRange = rangeRef.current;
+      const { startIndex, endIndex } = currentRange;
+      const currentLength = endIndex - startIndex;
+
+      // 邊界檢查
+      if (currentLength <= MIN_ZOOM_ITEMS && direction > 0) return;
+
+      const zoomAmount = currentLength * zoomSpeed * direction;
+      const rect = element.getBoundingClientRect();
+      const mouseX = clientX - rect.left;
+      const focusPercentage = Math.max(0, Math.min(1, mouseX / rect.width));
+
+      const newRange = calculateNewRange(
+        currentRange,
+        totalLength,
+        zoomAmount,
+        focusPercentage,
+      );
+
+      if (
+        newRange.startIndex !== currentRange.startIndex ||
+        newRange.endIndex !== currentRange.endIndex
+      ) {
+        onRangeChangeRef.current(newRange);
+      }
+    };
+
+    // 節流處理 - 16ms (60fps)
+    const throttledZoom = rafThrottle(performZoom);
+
+    // 滑鼠滾輪事件
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const direction = e.deltaY < 0 ? 1 : -1;
+      throttledZoom(direction, e.clientX);
+    };
+
+    // 觸控事件
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        lastTouchDistance.current = null;
+      }
+    };
+
+    // 觸控移動節流
+    const handleTouchMove = throttle((e: TouchEvent) => {
+      if (e.touches.length !== 2) return;
+      e.preventDefault();
+
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const currentDistance = Math.hypot(
+        touch1.clientX - touch2.clientX,
+        touch1.clientY - touch2.clientY,
+      );
+
+      if (lastTouchDistance.current !== null) {
+        const direction = currentDistance > lastTouchDistance.current ? 1 : -1;
+        const centerClientX = (touch1.clientX + touch2.clientX) / 2;
+        performZoom(direction, centerClientX);
+      }
+
+      lastTouchDistance.current = currentDistance;
+    }, 16);
+
+    element.addEventListener("wheel", handleWheel, { passive: false });
+    element.addEventListener("touchstart", handleTouchStart, { passive: true });
+    element.addEventListener("touchmove", handleTouchMove as any, {
+      passive: false,
+    });
+
+    return () => {
+      element.removeEventListener("wheel", handleWheel);
+      element.removeEventListener("touchstart", handleTouchStart);
+      element.removeEventListener("touchmove", handleTouchMove as any);
+    };
+  }, [ref, totalLength, zoomSpeed]);
 }
 
 //! =============== 主組件 ===============
@@ -144,241 +252,278 @@ export function ZoomableChart<T extends Record<string, unknown>>({
   data,
   xDataKey,
   series,
-  height = 380,
+  height = 400,
   showBrush = true,
   showResetButton = true,
-  dualYAxis,
+  dualYAxis = false,
   xAxisFormatter,
   className,
+  zoomSpeed = 0.1,
 }: ZoomableChartProps<T>) {
-  //* 縮放範圍狀態 - 控制 Brush 的 startIndex/endIndex
+  // 合併相關狀態
   const [range, setRange] = useState<RangeState>(() => ({
-    left: 0,
-    right: Math.max(0, data.length - 1),
+    startIndex: 0,
+    endIndex: Math.max(0, data.length - 1),
   }));
 
-  //* 拖曳選取狀態
   const [selection, setSelection] = useState<SelectionState>({
-    left: null,
-    right: null,
+    startX: null,
+    endX: null,
   });
-  const [selecting, setSelecting] = useState(false);
 
+  const isSelectingRef = useRef(false); // 使用 ref 避免頻繁渲染
   const chartRef = useRef<HTMLDivElement>(null);
 
-  //* 將 series 轉為 ChartConfig
+  // 資料長度變化時重置範圍
+  useEffect(() => {
+    setRange({
+      startIndex: 0,
+      endIndex: Math.max(0, data.length - 1),
+    });
+  }, [data.length]);
+
+  // 使用優化後的 Hook
+  useWheelZoom(chartRef, range, setRange, data.length, zoomSpeed);
+
+  // 快取配置
   const chartConfig = useMemo(() => buildChartConfig(series), [series]);
 
-  //* 安全的 range（防止越界）
-  const safeRange = useMemo(
-    () => ({
-      left: Math.max(0, Math.min(range.left, data.length - 1)),
-      right: Math.max(0, Math.min(range.right, data.length - 1)),
-    }),
-    [range, data.length],
+  // 快取計算結果
+  const isZoomed = useMemo(
+    () => range.startIndex > 0 || range.endIndex < data.length - 1,
+    [range.startIndex, range.endIndex, data.length],
   );
 
-  //* 是否已縮放
-  const isZoomed = safeRange.left !== 0 || safeRange.right !== data.length - 1;
+  // 穩定的事件處理器
+  const handleBrushChange = useCallback((e: any) => {
+    if (e?.startIndex !== undefined && e?.endIndex !== undefined) {
+      setRange({ startIndex: e.startIndex, endIndex: e.endIndex });
+    }
+  }, []);
 
-  //! =============== 事件處理 (參考 shadcn-chart-brush) ===============
+  const handleMouseDown = useCallback((e: any) => {
+    if (!e?.activeLabel) return;
+    isSelectingRef.current = true;
+    setSelection({ startX: e.activeLabel, endX: e.activeLabel });
+  }, []);
 
-  //* 🔥 關鍵：使用全資料 data 來找 index
-  const handleMouseDown = useCallback(
-    (e: ChartMouseEvent) => {
-      if (e.activeLabel) {
-        setSelection({
-          left: data.findIndex((d) => d[xDataKey] === e.activeLabel),
-          right: null,
-        });
-        setSelecting(true);
-      }
-    },
-    [data, xDataKey],
-  );
-
-  const handleMouseMove = useCallback(
-    (e: ChartMouseEvent) => {
-      if (selecting && e.activeLabel) {
-        setSelection((prev) => ({
-          ...prev,
-          right: data.findIndex((d) => d[xDataKey] === e.activeLabel),
-        }));
-      }
-    },
-    [selecting, data, xDataKey],
+  // 使用 ref + throttle 優化滑鼠移動
+  const handleMouseMove = useMemo(
+    () =>
+      rafThrottle((e: any) => {
+        if (isSelectingRef.current && e?.activeLabel) {
+          setSelection((prev) => ({ ...prev, endX: e.activeLabel }));
+        }
+      }),
+    [],
   );
 
   const handleMouseUp = useCallback(() => {
-    if (selection.left !== null && selection.right !== null) {
-      const [tempLeft, tempRight] = [selection.left, selection.right].sort(
-        (a, b) => a - b,
-      );
-      setRange({ left: tempLeft, right: tempRight });
-    }
-    setSelection({ left: null, right: null });
-    setSelecting(false);
-  }, [selection]);
+    isSelectingRef.current = false;
 
-  const handleBrushChange = useCallback(
-    (e: { startIndex?: number; endIndex?: number }) => {
-      setRange({
-        left: e.startIndex ?? 0,
-        right: e.endIndex ?? data.length - 1,
-      });
-    },
-    [data.length],
-  );
+    setSelection((prevSelection) => {
+      if (
+        prevSelection.startX &&
+        prevSelection.endX &&
+        prevSelection.startX !== prevSelection.endX
+      ) {
+        const startIdx = data.findIndex(
+          (item) => item[xDataKey] === prevSelection.startX,
+        );
+        const endIdx = data.findIndex(
+          (item) => item[xDataKey] === prevSelection.endX,
+        );
+
+        if (startIdx !== -1 && endIdx !== -1) {
+          const [min, max] = [startIdx, endIdx].sort((a, b) => a - b);
+          setRange({ startIndex: min, endIndex: max });
+        }
+      }
+
+      return { startX: null, endX: null };
+    });
+  }, [data, xDataKey]);
 
   const handleReset = useCallback(() => {
-    setRange({ left: 0, right: data.length - 1 });
+    setRange({ startIndex: 0, endIndex: Math.max(0, data.length - 1) });
   }, [data.length]);
 
-  //! =============== 渲染 ===============
-
-  // Guard Clause
-  if (data.length === 0) {
-    return (
-      <div
-        className="flex items-center justify-center text-muted-foreground"
-        style={{ height }}
-      >
-        無圖表資料
-      </div>
-    );
+  // 早期返回，避免無效渲染
+  if (!data?.length) {
+    return <div className="text-muted-foreground">無資料</div>;
   }
 
   return (
-    <div className={className} ref={chartRef}>
-      {/* Reset 按鈕 */}
+    <div className={`w-full space-y-2 ${className || ""}`} ref={chartRef}>
       {showResetButton && isZoomed && (
-        <div className="flex justify-end mb-2">
+        <div className="flex justify-end">
           <Button
             variant="outline"
             size="sm"
             onClick={handleReset}
-            className="gap-1"
+            className="h-8 gap-1 text-xs"
           >
-            <RotateCcw className="h-3 w-3" />
-            重置縮放
+            <RotateCcw className="h-3.5 w-3.5" /> 重置縮放
           </Button>
         </div>
       )}
 
       <ChartContainer
         config={chartConfig}
-        className="aspect-auto w-full"
+        className="w-full"
         style={{ height }}
       >
-        {/* 🔥 關鍵：顯示全資料 data，由 Brush 控制可見範圍 */}
-        <ComposedChart
-          data={data}
-          margin={CHART_MARGIN}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-        >
-          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+        <div style={{ height }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart
+              data={data}
+              margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                vertical={false}
+                stroke="hsl(var(--border))"
+              />
 
-          {/* X 軸 */}
-          <XAxis
-            dataKey={xDataKey}
-            tickLine={false}
-            axisLine={false}
-            tickMargin={8}
-            tickFormatter={xAxisFormatter}
-            style={{ userSelect: "none" }}
-          />
+              <XAxis
+                dataKey={xDataKey}
+                tickLine={false}
+                axisLine={false}
+                tickMargin={10}
+                minTickGap={32}
+                tickFormatter={xAxisFormatter}
+                stroke="hsl(var(--muted-foreground))"
+                fontSize={12}
+              />
 
-          {/* Y 軸 */}
-          {dualYAxis ? (
-            <>
               <YAxis
                 yAxisId="left"
-                orientation="left"
                 tickLine={false}
                 axisLine={false}
-                tickMargin={8}
-                width={60}
-                style={{ userSelect: "none" }}
+                tickMargin={10}
+                stroke="hsl(var(--muted-foreground))"
+                fontSize={12}
               />
-              <YAxis
-                yAxisId="right"
-                orientation="right"
-                tickLine={false}
-                axisLine={false}
-                tickMargin={8}
-                width={60}
-                style={{ userSelect: "none" }}
+              {dualYAxis && (
+                <YAxis
+                  yAxisId="right"
+                  orientation="right"
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={10}
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                />
+              )}
+
+              <ChartTooltip
+                cursor={false}
+                content={<ChartTooltipContent indicator="dot" />}
               />
-            </>
-          ) : (
-            <YAxis
-              yAxisId="left"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              width={60}
-              style={{ userSelect: "none" }}
-            />
-          )}
+              <ChartLegend content={<ChartLegendContent />} />
 
-          {/* Tooltip - 使用 shadcn ChartTooltip */}
-          <ChartTooltip
-            cursor={false}
-            content={<ChartTooltipContent indicator="dot" />}
-          />
-
-          {/* Legend - 使用 shadcn ChartLegend */}
-          <ChartLegend content={<ChartLegendContent />} />
-
-          {/* Series */}
-          {series.map(renderSeries)}
-
-          {/* 🔥 選取區域視覺 - 直接使用 data 的 xDataKey 值 */}
-          {selection.left !== null && selection.right !== null && (
-            <ReferenceArea
-              x1={data[selection.left]?.[xDataKey] as string}
-              x2={data[selection.right]?.[xDataKey] as string}
-              fill="hsl(var(--primary))"
-              fillOpacity={0.1}
-              stroke="hsl(var(--primary))"
-              strokeOpacity={0.3}
-            />
-          )}
-
-          {/* 🔥 Brush - 控制可見範圍的關鍵 */}
-          {showBrush && (
-            <Brush
-              dataKey={xDataKey}
-              height={BRUSH_HEIGHT}
-              startIndex={safeRange.left}
-              endIndex={safeRange.right}
-              onChange={handleBrushChange}
-              stroke="hsl(var(--primary))"
-              fill="hsl(var(--muted))"
-              tickFormatter={xAxisFormatter}
-            >
-              {/* Brush 內的迷你圖表 */}
-              <ComposedChart>
-                {series.map((config) => (
+              {series.map((s) => {
+                const common = {
+                  key: s.dataKey,
+                  dataKey: s.dataKey,
+                  yAxisId: s.yAxisId || "left",
+                  stroke: `var(--color-${s.dataKey})`,
+                  fill: `var(--color-${s.dataKey})`,
+                  name: s.name,
+                };
+                if (s.type === "area")
+                  return (
+                    <Area
+                      {...common}
+                      type="monotone"
+                      fillOpacity={s.fillOpacity ?? 0.2}
+                      strokeWidth={2}
+                      isAnimationActive={false}
+                    />
+                  );
+                if (s.type === "bar")
+                  return (
+                    <Bar
+                      {...common}
+                      fillOpacity={s.fillOpacity ?? 0.8}
+                      radius={[4, 4, 0, 0]}
+                      isAnimationActive={false}
+                    />
+                  );
+                return (
                   <Line
-                    key={config.dataKey}
-                    dataKey={config.dataKey}
+                    {...common}
                     type="monotone"
-                    stroke={config.color}
-                    strokeWidth={1}
+                    strokeWidth={s.strokeWidth ?? 2}
                     dot={false}
+                    strokeDasharray={s.strokeDasharray}
                     isAnimationActive={false}
-                    opacity={0.5}
                   />
-                ))}
-              </ComposedChart>
-            </Brush>
-          )}
-        </ComposedChart>
+                );
+              })}
+
+              {isSelectingRef.current && selection.startX && selection.endX && (
+                <ReferenceArea
+                  x1={selection.startX}
+                  x2={selection.endX}
+                  strokeOpacity={0.3}
+                  fill="hsl(var(--primary))"
+                  fillOpacity={0.1}
+                />
+              )}
+
+              {showBrush && (
+                <Brush
+                  dataKey={xDataKey}
+                  height={30}
+                  tickFormatter={() => ""}
+                  stroke="hsl(var(--primary))"
+                  fill="hsl(var(--background))"
+                  startIndex={range.startIndex}
+                  endIndex={range.endIndex}
+                  onChange={handleBrushChange}
+                  className="mt-4"
+                >
+                  <ComposedChart data={data}>
+                    {series.slice(0, 1).map((s) => (
+                      <Line
+                        key={s.dataKey}
+                        dataKey={s.dataKey}
+                        type="monotone"
+                        stroke={`var(--color-${s.dataKey})`}
+                        strokeWidth={1}
+                        dot={false}
+                        isAnimationActive={false}
+                        opacity={0.5}
+                      />
+                    ))}
+                  </ComposedChart>
+                </Brush>
+              )}
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
       </ChartContainer>
     </div>
   );
+}
+
+//! =============== 輔助函數 ===============
+
+/**
+ * 建立 Chart Config
+ */
+function buildChartConfig(series: SeriesConfig[]): ChartConfig {
+  const config: ChartConfig = {};
+  series.forEach((s) => {
+    config[s.dataKey] = {
+      label: s.name,
+      color: s.color,
+    };
+  });
+  return config;
 }
