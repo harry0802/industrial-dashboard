@@ -31,7 +31,7 @@ import { fetchEquipment } from "@/services/endpoints/equipment";
  * // 自訂數量
  * const { data } = useEquipmentData(5000);
  */
-export function useEquipmentData(count: number = 10000) {
+export function useEquipmentData(count: number = 100000) {
   return useQuery({
     queryKey: ["equipment", count],
     queryFn: () => fetchEquipment(count),
