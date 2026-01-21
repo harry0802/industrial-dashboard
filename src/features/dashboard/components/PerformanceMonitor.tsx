@@ -36,6 +36,7 @@ const METRIC_CONFIG: Record<string, string> = {
   "api/stats": "performance.metrics.kpiApi",
   "api/equipment/100000": "performance.metrics.equipmentApi",
   "api/chart": "performance.metrics.chartApi",
+  "api/watchlist": "performance.metrics.watchlistApi",
   "Table Render Time": "performance.metrics.tableRender",
   "Table Processing Time": "performance.metrics.tableProcess",
   "Chart Reader Time": "performance.metrics.chartRender",
@@ -66,7 +67,8 @@ function usePerformanceLogic(): UsePerformanceReturn {
       }
     }
 
-    return result;
+    //* 依 timestamp 降冪排序 (最新的置頂)
+    return result.sort((a, b) => b.timestamp - a.timestamp);
   }, [metrics]);
 
   const isEmpty = metricEntries.length === 0;

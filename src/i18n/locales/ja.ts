@@ -201,6 +201,7 @@ export const ja = {
       kpiApi: "KPI API 時間",
       equipmentApi: "設備 API 時間",
       chartApi: "チャート API 時間",
+      watchlistApi: "監視リスト API 時間",
       tableRender: "テーブル描画時間",
       tableProcess: "テーブル処理時間",
       chartRender: "チャート描画時間",

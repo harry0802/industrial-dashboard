@@ -201,6 +201,7 @@ export const en = {
       kpiApi: "KPI API Time",
       equipmentApi: "Equipment API Time",
       chartApi: "Chart API Time",
+      watchlistApi: "Watchlist API Time",
       tableRender: "Table Render Time",
       tableProcess: "Table Processing Time",
       chartRender: "Chart Render Time",

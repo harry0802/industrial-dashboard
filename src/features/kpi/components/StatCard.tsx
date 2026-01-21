@@ -24,12 +24,13 @@ const TREND_ICONS: Record<TrendDirection, LucideIcon> = {
   stable: Minus,
 };
 
+//* Light/Dark mode 對比度優化
 const COLOR_CLASSES: Record<TrendColor, { text: string; bg: string }> = {
-  green: { text: "text-green-600", bg: "bg-green-500/10" },
-  red: { text: "text-red-600", bg: "bg-red-500/10" },
-  yellow: { text: "text-yellow-600", bg: "bg-yellow-500/10" },
-  blue: { text: "text-blue-600", bg: "bg-blue-500/10" },
-  gray: { text: "text-gray-600", bg: "bg-gray-500/10" },
+  green: { text: "text-emerald-700 dark:text-emerald-400", bg: "bg-emerald-500/10" },
+  red: { text: "text-red-600 dark:text-red-400", bg: "bg-red-500/10" },
+  yellow: { text: "text-amber-600 dark:text-amber-400", bg: "bg-amber-500/10" },
+  blue: { text: "text-blue-600 dark:text-blue-400", bg: "bg-blue-500/10" },
+  gray: { text: "text-gray-600 dark:text-gray-400", bg: "bg-gray-500/10" },
 };
 
 //* API unit -> i18n key mapping

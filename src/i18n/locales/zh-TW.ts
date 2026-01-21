@@ -201,6 +201,7 @@ export const zhTW = {
       kpiApi: "KPI API 耗時",
       equipmentApi: "設備 API 耗時",
       chartApi: "圖表 API 耗時",
+      watchlistApi: "監控 API 耗時",
       tableRender: "表格渲染耗時",
       tableProcess: "表格處理耗時",
       chartRender: "圖表渲染耗時",
