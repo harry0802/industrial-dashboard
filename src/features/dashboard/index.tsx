@@ -1,8 +1,10 @@
+import { useEffect, useRef } from "react";
 import DashboardHeader from "@/components/layout/DashboardHeader";
 import { WatchlistPanel, PerformanceMonitor } from "./components";
 import { ProductionTrendFeature } from "@/features/chart";
 import { KPIMetricsFeature } from "@/features/kpi";
 import { EquipmentFeature } from "@/features/equipment";
+import { usePerformanceStore } from "@/stores/usePerformanceStore";
 
 /**
  * 🎯 DashboardPage - 工業營運儀表板
@@ -17,7 +19,24 @@ import { EquipmentFeature } from "@/features/equipment";
  * - KPIMetricsFeature: 頂部關鍵指標 (5欄)
  * - MainContent: 左右分欄佈局 (Charts + Tables vs Panels)
  */
+// ⏱️ 頁面載入起始時間 (模組層級)
+const pageLoadStart = performance.now();
+
 function DashboardPage() {
+  const recordMetric = usePerformanceStore((s) => s.recordMetric);
+  const hasRecorded = useRef(false);
+
+  // ⏱️ Performance Metric: Total Page Render Time
+  useEffect(() => {
+    if (hasRecorded.current) return;
+    hasRecorded.current = true;
+
+    requestAnimationFrame(() => {
+      const duration = performance.now() - pageLoadStart;
+      recordMetric("Total Page Render Time", duration);
+    });
+  }, [recordMetric]);
+
   return (
     <div className="min-h-screen bg-background">
       <DashboardHeader />

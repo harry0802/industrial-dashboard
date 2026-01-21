@@ -50,8 +50,11 @@ export function formatMetricValue(value: number, unit?: string): string {
  * formatDuration(2500) // "2.50s"
  */
 export function formatDuration(ms: number): string {
+  if (ms < 1) {
+    return `${ms.toFixed(2)}ms`;
+  }
   if (ms < 1000) {
-    return `${ms.toFixed(0)}ms`;
+    return `${Math.round(ms)}ms`;
   }
   return `${(ms / 1000).toFixed(2)}s`;
 }

@@ -60,6 +60,7 @@ const FIELD_MAPPING: Record<string, keyof ChartDataPoint> = {
  */
 function recordReaderTime(startTime: number): void {
   const duration = performance.now() - startTime;
+  console.log("[Perf] Chart Reader Time:", duration.toFixed(2), "ms");
   usePerformanceStore.getState().recordMetric("Chart Reader Time", duration);
 }
 

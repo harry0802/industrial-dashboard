@@ -17,23 +17,55 @@ interface PerformanceMonitorProps {
   className?: string;
 }
 
+interface DisplayMetric {
+  key: string;
+  label: string;
+  value: number;
+  timestamp: number;
+}
+
 interface UsePerformanceReturn {
-  metricEntries: { name: string; value: number; timestamp: number }[];
+  metricEntries: DisplayMetric[];
   isEmpty: boolean;
 }
+
+//! =============== 指標白名單 + 名稱映射 ===============
+
+const METRIC_CONFIG: Record<string, string> = {
+  "api/stats": "KPI API Time",
+  "api/equipment/100000": "Equipment API Time",
+  "api/chart": "Chart API Time",
+  "Table Render Time": "Table Reader Time",
+  "Table Processing Time": "Table Processing Time",
+  "Chart Reader Time": "Chart Reader Time",
+  "Total Page Render Time": "Total Page Render Time",
+};
 
 //! =============== 2. 核心邏輯 (Hook) ===============
 
 /**
  * 效能資料邏輯 Hook
- * @description 集中處理效能指標排序與判斷
+ * @description 只顯示白名單內的指標，並映射友善名稱
  */
 function usePerformanceLogic(): UsePerformanceReturn {
   const metrics = usePerformanceStore((state) => state.metrics);
 
-  // 💡 按時間戳排序指標 (最新的在最上方)
   const metricEntries = useMemo(() => {
-    return Object.values(metrics).sort((a, b) => b.timestamp - a.timestamp);
+    const result: DisplayMetric[] = [];
+
+    for (const [storeKey, label] of Object.entries(METRIC_CONFIG)) {
+      const metric = metrics[storeKey];
+      if (metric) {
+        result.push({
+          key: storeKey,
+          label,
+          value: metric.value,
+          timestamp: metric.timestamp,
+        });
+      }
+    }
+
+    return result;
   }, [metrics]);
 
   const isEmpty = metricEntries.length === 0;
@@ -94,8 +126,8 @@ function PerformanceMonitor({ className }: PerformanceMonitorProps) {
         <div className="space-y-2">
           {metricEntries.map((metric) => (
             <MetricCard
-              key={metric.name}
-              label={metric.name}
+              key={metric.key}
+              label={metric.label}
               value={formatDuration(metric.value)}
               valueColor={getPerformanceColor(metric.value)}
             />

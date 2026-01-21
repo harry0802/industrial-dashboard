@@ -39,8 +39,7 @@ interface ErrorFallbackProps {
  */
 function ErrorFallback({ error, resetErrorBoundary }: ErrorFallbackProps) {
   // 🧠 安全處理 unknown 類型的 error
-  const errorMessage =
-    error instanceof Error ? error.message : "發生未知錯誤";
+  const errorMessage = error instanceof Error ? error.message : "發生未知錯誤";
 
   return (
     <div className="flex min-h-[400px] items-center justify-center p-4">
@@ -49,9 +48,7 @@ function ErrorFallback({ error, resetErrorBoundary }: ErrorFallbackProps) {
           <AlertCircle className="h-12 w-12 text-destructive" />
           <div>
             <h2 className="text-lg font-semibold">發生錯誤</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {errorMessage}
-            </p>
+            <p className="mt-2 text-sm text-muted-foreground">{errorMessage}</p>
           </div>
           <Button onClick={resetErrorBoundary} variant="outline">
             重新載入
