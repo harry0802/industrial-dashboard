@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Factory, X } from "lucide-react";
@@ -20,6 +21,7 @@ function WatchlistCardComponent({
   onRemove,
   dragOverlay = false,
 }: WatchlistCardProps) {
+  const { t } = useTranslation();
   const {
     attributes,
     listeners,
@@ -102,11 +104,11 @@ function WatchlistCardComponent({
             )}
           >
             <span className="font-bold">{data.rpm.toLocaleString()}</span>
-            <span className="text-[10px] opacity-70">RPM</span>
+            <span className="text-[10px] opacity-70">{t("watchlist.card.units.rpm")}</span>
           </Badge>
         </div>
       ) : (
-        <span className="text-xs text-muted-foreground shrink-0">No data</span>
+        <span className="text-xs text-muted-foreground shrink-0">{t("watchlist.card.noData")}</span>
       )}
 
       {/* Remove Button */}

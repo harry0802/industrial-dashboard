@@ -1,31 +1,56 @@
 import Papa from "papaparse";
 import { saveAs } from "file-saver";
+import type { TFunction } from "i18next";
 import type { Equipment } from "../types";
 
+//! =============== Types ===============
+
+interface ExportOptions {
+  /** i18n 翻譯函數 */
+  t: TFunction;
+  /** 檔案名稱 (不含副檔名) */
+  filename?: string;
+  /** 日期時間格式化的語系 */
+  locale?: string;
+}
+
+//! =============== Helpers ===============
+
 /**
- * 匯出設備資料為 CSV
- * @description 使用 PapaParse 將資料轉換為 CSV 並觸發下載
+ * 翻譯狀態值
+ * @description 將 API 回傳的狀態轉換為翻譯後的文字
+ */
+function translateStatus(status: string, t: TFunction): string {
+  const statusKey = status.toLowerCase() as "normal" | "warning" | "error";
+  return t(`equipment.status.${statusKey}`);
+}
+
+//! =============== Main Export Function ===============
+
+/**
+ * 匯出設備資料為 CSV (i18n 支援)
+ * @description 使用 PapaParse 將資料轉換為已翻譯的 CSV 並觸發下載
  *
  * @param {Equipment[]} data - 要匯出的設備資料
- * @param {string} filename - 檔案名稱 (不含副檔名)
+ * @param {ExportOptions} options - 匯出選項 (含翻譯函數)
  *
  * @example
- * const data = [{ id: '1', machine: 'Welder E', ... }];
- * exportEquipmentToCSV(data, 'equipment-report');
- * // 下載檔案: equipment-report-2024-01-18.csv
+ * const { t, i18n } = useTranslation();
+ * exportEquipmentToCSV(data, { t, locale: i18n.language });
+ * // 下載檔案: equipment-data-2024-01-18.csv (標題與狀態已翻譯)
  */
 export function exportEquipmentToCSV(
   data: Equipment[],
-  filename = "equipment-data"
+  { t, filename = "equipment-data", locale }: ExportOptions
 ) {
-  // 格式化資料 (轉換欄位名稱與數值格式)
+  // 💡 使用翻譯後的欄位名稱作為 CSV 標題
   const formattedData = data.map((item) => ({
-    ID: item.id,
-    Machine: item.machine,
-    Status: item.status,
-    "Temperature (°C)": item.temperature.toFixed(1),
-    RPM: item.rpm,
-    "Last Update": new Date(item.timestamp).toLocaleString(),
+    [t("equipment.columns.id")]: item.id,
+    [t("equipment.columns.machine")]: item.machine,
+    [t("equipment.columns.status")]: translateStatus(item.status, t),
+    [t("equipment.columns.temperature")]: item.temperature.toFixed(1),
+    [t("equipment.columns.rpm")]: item.rpm,
+    [t("equipment.columns.timestamp")]: new Date(item.timestamp).toLocaleString(locale),
   }));
 
   // 轉換為 CSV

@@ -8,6 +8,8 @@
  */
 
 import { useState, useMemo, useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
+import { useTheme } from "next-themes";
 import { XAxis, YAxis } from "recharts";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -42,18 +44,14 @@ type ChartMode = "line" | "area" | "bar";
 
 //! =============== 常量配置 ===============
 
-const CHART_MODES: Record<ChartMode, string> = {
-  line: "Line Chart",
-  area: "Area Chart",
-  bar: "Bar Chart",
-};
+const CHART_MODE_KEYS: ChartMode[] = ["line", "area", "bar"];
 
-const CHART_CONFIG: ChartConfig = {
-  production: { label: "產量 (pcs)", color: "#3b82f6" },
-  defectCount: { label: "不良品 (pcs)", color: "#ef4444" },
-  downtime: { label: "停機 (次)", color: "#f59e0b" },
-  yield: { label: "良率 (%)", color: "#10b981" },
-  efficiency: { label: "稼動率 (%)", color: "#8b5cf6" },
+const CHART_COLORS: Record<string, string> = {
+  production: "#3b82f6",
+  defectCount: "#ef4444",
+  downtime: "#f59e0b",
+  yield: "#10b981",
+  efficiency: "#8b5cf6",
 };
 
 //! =============== 子組件 ===============
@@ -82,20 +80,22 @@ function ChartError({
   error: Error | null;
   onRetry: () => void;
 }) {
+  const { t } = useTranslation();
+
   return (
     <Card>
       <CardContent className="pt-6">
         <div className="flex flex-col items-center justify-center h-[420px] gap-4">
           <AlertCircle className="h-12 w-12 text-destructive" />
           <div className="text-center">
-            <p className="font-medium">無法載入圖表資料</p>
+            <p className="font-medium">{t("chart.messages.loadError")}</p>
             <p className="text-sm text-muted-foreground">
-              {error?.message || "發生未知錯誤"}
+              {error?.message || t("chart.messages.unknownError")}
             </p>
           </div>
           <Button variant="outline" onClick={onRetry}>
             <RefreshCw className="h-4 w-4 mr-2" />
-            重試
+            {t("common.retry")}
           </Button>
         </div>
       </CardContent>
@@ -106,23 +106,39 @@ function ChartError({
 //! =============== 主組件 ===============
 
 export function ProductionTrendFeature({ className, chartOptions }: Props) {
+  const { t } = useTranslation();
+  const { resolvedTheme } = useTheme();
   const { data, isLoading, isError, error, refetch } =
     useChartData(chartOptions);
   const [chartMode, setChartMode] = useState<ChartMode>("area");
   const [isExporting, setIsExporting] = useState(false);
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
+  //* 動態產生 ChartConfig (i18n)
+  const chartConfig = useMemo<ChartConfig>(
+    () => ({
+      production: { label: t("chart.series.production"), color: CHART_COLORS.production },
+      defectCount: { label: t("chart.series.defectCount"), color: CHART_COLORS.defectCount },
+      downtime: { label: t("chart.series.downtime"), color: CHART_COLORS.downtime },
+      yield: { label: t("chart.series.yield"), color: CHART_COLORS.yield },
+      efficiency: { label: t("chart.series.efficiency"), color: CHART_COLORS.efficiency },
+    }),
+    [t]
+  );
+
   //* X 軸時間格式化
   const formatXAxis = useCallback((value: string) => value, []);
 
-  //* 匯出功能
+  //* 匯出功能 - Theme-aware 背景色
+  const exportBackgroundColor = resolvedTheme === "dark" ? "#020817" : "#ffffff";
+
   const handleExportPNG = useCallback(async () => {
     if (!chartContainerRef.current) return;
 
     setIsExporting(true);
     try {
       const dataUrl = await toPng(chartContainerRef.current, {
-        backgroundColor: "white",
+        backgroundColor: exportBackgroundColor,
         pixelRatio: 2,
       });
 
@@ -135,14 +151,16 @@ export function ProductionTrendFeature({ className, chartOptions }: Props) {
     } finally {
       setIsExporting(false);
     }
-  }, []);
+  }, [exportBackgroundColor]);
 
   const handleExportSVG = useCallback(async () => {
     if (!chartContainerRef.current) return;
 
     setIsExporting(true);
     try {
-      const dataUrl = await toSvg(chartContainerRef.current);
+      const dataUrl = await toSvg(chartContainerRef.current, {
+        backgroundColor: exportBackgroundColor,
+      });
 
       const link = document.createElement("a");
       link.download = `production-trend-${Date.now()}.svg`;
@@ -153,7 +171,7 @@ export function ProductionTrendFeature({ className, chartOptions }: Props) {
     } finally {
       setIsExporting(false);
     }
-  }, []);
+  }, [exportBackgroundColor]);
 
   // X 軸配置 - memoized
   const xAxisConfig = useMemo(
@@ -190,7 +208,7 @@ export function ProductionTrendFeature({ className, chartOptions }: Props) {
       <Card className={className}>
         <CardContent className="pt-6">
           <div className="flex items-center justify-center h-[105px] text-muted-foreground">
-            目前沒有圖表資料
+            {t("chart.messages.noData")}
           </div>
         </CardContent>
       </Card>
@@ -198,12 +216,12 @@ export function ProductionTrendFeature({ className, chartOptions }: Props) {
   }
 
   return (
-    <Chart.Root data={data} config={CHART_CONFIG} xDataKey="time">
+    <Chart.Root data={data} config={chartConfig} xDataKey="time">
       <Card className={cn("overflow-hidden", className)}>
         <CardContent className="pt-4 pb-2">
           {/* Header */}
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold">生產趨勢分析</h3>
+            <h3 className="text-lg font-semibold">{t("chart.messages.analysisTitle")}</h3>
 
             <div className="flex items-center gap-2">
               {/* 🔥 IoC: Reset 按鈕現在可以自由放在 Header */}
@@ -218,9 +236,9 @@ export function ProductionTrendFeature({ className, chartOptions }: Props) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {(Object.keys(CHART_MODES) as ChartMode[]).map((mode) => (
+                  {CHART_MODE_KEYS.map((mode) => (
                     <SelectItem key={mode} value={mode}>
-                      {CHART_MODES[mode]}
+                      {t(`chart.modes.${mode}`)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -234,17 +252,17 @@ export function ProductionTrendFeature({ className, chartOptions }: Props) {
                     size="icon"
                     className="h-8 w-8"
                     disabled={isExporting}
-                    title="匯出"
+                    title={t("chart.actions.export")}
                   >
                     <Download className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={handleExportPNG}>
-                    匯出 PNG
+                    {t("chart.actions.exportPng")}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleExportSVG}>
-                    匯出 SVG
+                    {t("chart.actions.exportSvg")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

@@ -4,6 +4,7 @@
  * 消費 Context 的工具列，支援自訂 actions slot
  */
 import { useEffect, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,6 +39,7 @@ export function EquipmentTableToolbar({
   actions,
   hideExport = false,
 }: EquipmentTableToolbarProps) {
+  const { t } = useTranslation();
   const { table, exportCSV } = useEquipmentTableContext();
   const statusColumn = table.getColumn("status");
 
@@ -82,13 +84,13 @@ export function EquipmentTableToolbar({
           onValueChange={(v) => setStatusFilter(v as EquipmentStatus | "all")}
         >
           <SelectTrigger className="w-32">
-            <SelectValue placeholder="All Status" />
+            <SelectValue placeholder={t("equipment.toolbar.allStatus")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="Normal">Normal</SelectItem>
-            <SelectItem value="Warning">Warning</SelectItem>
-            <SelectItem value="Error">Error</SelectItem>
+            <SelectItem value="all">{t("equipment.toolbar.allStatus")}</SelectItem>
+            <SelectItem value="Normal">{t("equipment.status.normal")}</SelectItem>
+            <SelectItem value="Warning">{t("equipment.status.warning")}</SelectItem>
+            <SelectItem value="Error">{t("equipment.status.error")}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -99,14 +101,14 @@ export function EquipmentTableToolbar({
           <SelectContent>
             {SEARCH_SCOPE_OPTIONS.map((opt) => (
               <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
+                {t(opt.labelKey)}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
 
         <Input
-          placeholder={`Search ${scope === "all" ? "all fields" : scope}...`}
+          placeholder={t("equipment.toolbar.searchPlaceholder", { scope: t(`equipment.scopes.${scope}`) })}
           value={searchValue}
           onChange={(e) => setSearchValue(e.target.value)}
           className="h-9"
@@ -118,7 +120,7 @@ export function EquipmentTableToolbar({
         {hasActiveFilters && (
           <Button variant="ghost" size="sm" onClick={handleReset}>
             <X className="h-4 w-4 mr-2" />
-            Reset
+            {t("equipment.toolbar.reset")}
           </Button>
         )}
 
@@ -127,7 +129,7 @@ export function EquipmentTableToolbar({
         {!hideExport && (
           <Button variant="outline" size="sm" onClick={exportCSV}>
             <Download className="h-4 w-4 mr-2" />
-            Export
+            {t("equipment.toolbar.exportCsv")}
           </Button>
         )}
 

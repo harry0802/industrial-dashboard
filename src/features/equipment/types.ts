@@ -46,11 +46,11 @@ export type SearchScope = "all" | "id" | "machine" | "status";
 
 /**
  * 搜尋範圍選項
- * @description 用於 Select 元件的選項列表
+ * @description 用於 Select 元件的選項列表，使用 i18n key
  */
 export const SEARCH_SCOPE_OPTIONS = [
-  { value: "all" as const, label: "All Fields" },
-  { value: "id" as const, label: "ID" },
-  { value: "machine" as const, label: "Machine" },
-  { value: "status" as const, label: "Status" },
+  { value: "all" as const, labelKey: "equipment.scopes.all" },
+  { value: "id" as const, labelKey: "equipment.scopes.id" },
+  { value: "machine" as const, labelKey: "equipment.scopes.machine" },
+  { value: "status" as const, labelKey: "equipment.scopes.status" },
 ] as const;

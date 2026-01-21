@@ -4,6 +4,7 @@
  * Feature 層組裝: 整合 hooks + Compound Components
  */
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EquipmentTable } from "@/components/equipment-table";
@@ -20,6 +21,7 @@ const TABLE_HEIGHT = 300;
 //! =============== Component ===============
 
 export function EquipmentFeature() {
+  const { t, i18n } = useTranslation();
   const recordMetric = usePerformanceStore((s) => s.recordMetric);
 
   // 1. 資料獲取 (已經過 Zod 驗證)
@@ -41,10 +43,13 @@ export function EquipmentFeature() {
     }
   }, [data, recordMetric]);
 
-  // 5. CSV 匯出
+  // 5. CSV 匯出 (傳入 t 函數以支援 i18n)
   const handleExportCSV = () => {
     const rows = table.getRowModel().rows;
-    exportEquipmentToCSV(rows.map((r) => r.original));
+    exportEquipmentToCSV(rows.map((r) => r.original), {
+      t,
+      locale: i18n.language,
+    });
   };
 
   // Loading State
@@ -96,7 +101,7 @@ export function EquipmentFeature() {
     return (
       <Card>
         <CardContent className="p-6 text-center text-red-600">
-          Error loading equipment data: {(error as Error).message}
+          {t("equipment.messages.loadError")}: {(error as Error).message}
         </CardContent>
       </Card>
     );
@@ -107,7 +112,7 @@ export function EquipmentFeature() {
       <Card>
         <CardHeader>
           <CardTitle>
-            Equipment Status ({table.getRowModel().rows.length} items)
+            {t("equipment.title")} ({t("equipment.messages.itemCount", { count: table.getRowModel().rows.length })})
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">

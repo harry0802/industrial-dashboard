@@ -3,6 +3,7 @@
  */
 
 import { memo, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Activity, AlertCircle } from "lucide-react";
 import { usePerformanceStore } from "@/stores/usePerformanceStore";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -19,7 +20,7 @@ interface PerformanceMonitorProps {
 
 interface DisplayMetric {
   key: string;
-  label: string;
+  labelKey: string; // i18n key
   value: number;
   timestamp: number;
 }
@@ -29,16 +30,16 @@ interface UsePerformanceReturn {
   isEmpty: boolean;
 }
 
-//! =============== 指標白名單 + 名稱映射 ===============
+//! =============== 指標白名單 + 翻譯 Key 映射 ===============
 
 const METRIC_CONFIG: Record<string, string> = {
-  "api/stats": "KPI API Time",
-  "api/equipment/100000": "Equipment API Time",
-  "api/chart": "Chart API Time",
-  "Table Render Time": "Table Reader Time",
-  "Table Processing Time": "Table Processing Time",
-  "Chart Reader Time": "Chart Reader Time",
-  "Total Page Render Time": "Total Page Render Time",
+  "api/stats": "performance.metrics.kpiApi",
+  "api/equipment/100000": "performance.metrics.equipmentApi",
+  "api/chart": "performance.metrics.chartApi",
+  "Table Render Time": "performance.metrics.tableRender",
+  "Table Processing Time": "performance.metrics.tableProcess",
+  "Chart Reader Time": "performance.metrics.chartRender",
+  "Total Page Render Time": "performance.metrics.pageLoad",
 };
 
 //! =============== 2. 核心邏輯 (Hook) ===============
@@ -53,12 +54,12 @@ function usePerformanceLogic(): UsePerformanceReturn {
   const metricEntries = useMemo(() => {
     const result: DisplayMetric[] = [];
 
-    for (const [storeKey, label] of Object.entries(METRIC_CONFIG)) {
+    for (const [storeKey, labelKey] of Object.entries(METRIC_CONFIG)) {
       const metric = metrics[storeKey];
       if (metric) {
         result.push({
           key: storeKey,
-          label,
+          labelKey,
           value: metric.value,
           timestamp: metric.timestamp,
         });
@@ -85,6 +86,7 @@ function usePerformanceLogic(): UsePerformanceReturn {
  * - 保持 MetricCard 統一指標展示樣式
  */
 function PerformanceMonitor({ className }: PerformanceMonitorProps) {
+  const { t } = useTranslation();
   const { metricEntries, isEmpty } = usePerformanceLogic();
 
   // Push Ifs Up: 處理空狀態視圖
@@ -92,12 +94,12 @@ function PerformanceMonitor({ className }: PerformanceMonitorProps) {
     return (
       <Card className={cn("h-full", className)}>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Performance Monitor</CardTitle>
+          <CardTitle className="text-base">{t("performance.title")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex h-[200px] flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
             <AlertCircle className="h-8 w-8 opacity-50" />
-            <p>無效能資料</p>
+            <p>{t("performance.noData")}</p>
           </div>
         </CardContent>
       </Card>
@@ -111,13 +113,13 @@ function PerformanceMonitor({ className }: PerformanceMonitorProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Activity className="h-4 w-4" />
-            <CardTitle className="text-base">Performance Monitor</CardTitle>
+            <CardTitle className="text-base">{t("performance.title")}</CardTitle>
           </div>
           <Badge
             variant="secondary"
             className="px-2 py-0.5 text-xs font-normal"
           >
-            {metricEntries.length} Metrics
+            {t("performance.units.metricsCount", { count: metricEntries.length })}
           </Badge>
         </div>
       </CardHeader>
@@ -127,7 +129,7 @@ function PerformanceMonitor({ className }: PerformanceMonitorProps) {
           {metricEntries.map((metric) => (
             <MetricCard
               key={metric.key}
-              label={metric.label}
+              label={t(metric.labelKey)}
               value={formatDuration(metric.value)}
               valueColor={getPerformanceColor(metric.value)}
             />

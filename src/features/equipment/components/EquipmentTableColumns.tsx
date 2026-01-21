@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { createColumnHelper } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
@@ -19,12 +20,14 @@ const columnHelper = createColumnHelper<Equipment>();
  * @returns {ColumnDef<Equipment>[]} TanStack Table 欄位定義
  */
 export function useEquipmentColumns() {
+  const { t } = useTranslation();
+
   return React.useMemo(
     () => [
       // 1. ID
       columnHelper.accessor("id", {
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="ID" />
+          <DataTableColumnHeader column={column} title={t("equipment.columns.id")} />
         ),
         size: 100,
         cell: (info) => {
@@ -36,7 +39,7 @@ export function useEquipmentColumns() {
       // 2. Machine
       columnHelper.accessor("machine", {
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="Machine" />
+          <DataTableColumnHeader column={column} title={t("equipment.columns.machine")} />
         ),
         size: 200,
       }),
@@ -44,7 +47,7 @@ export function useEquipmentColumns() {
       // 3. Status
       columnHelper.accessor("status", {
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="Status" />
+          <DataTableColumnHeader column={column} title={t("equipment.columns.status")} />
         ),
         size: 120,
         cell: (info) => {
@@ -56,7 +59,7 @@ export function useEquipmentColumns() {
           };
           return (
             <Badge variant="outline" className={colorMap[status]}>
-              {status}
+              {t(`equipment.status.${status.toLowerCase()}`)}
             </Badge>
           );
         },
@@ -66,7 +69,7 @@ export function useEquipmentColumns() {
       // 4. Temperature
       columnHelper.accessor("temperature", {
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="Temp (°C)" />
+          <DataTableColumnHeader column={column} title={t("equipment.columns.temperature")} />
         ),
         size: 120,
         cell: (info) => (
@@ -77,7 +80,7 @@ export function useEquipmentColumns() {
       // 5. RPM
       columnHelper.accessor("rpm", {
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="RPM" />
+          <DataTableColumnHeader column={column} title={t("equipment.columns.rpm")} />
         ),
         size: 120,
         cell: (info) => (
@@ -88,7 +91,7 @@ export function useEquipmentColumns() {
       // 6. Timestamp
       columnHelper.accessor("timestamp", {
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="Last Update" />
+          <DataTableColumnHeader column={column} title={t("equipment.columns.timestamp")} />
         ),
         size: 180,
         cell: (info) => {
@@ -101,6 +104,6 @@ export function useEquipmentColumns() {
         },
       }),
     ],
-    [],
+    [t],
   );
 }

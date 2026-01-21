@@ -17,7 +17,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { fetchKPI, type KPIData, type KPIItem } from "@/services/endpoints/kpi";
-import { formatMetricValue } from "@/utils/format";
 import { usePerformanceStore } from "@/stores/usePerformanceStore";
 
 //! =============== 型別定義 ===============
@@ -27,8 +26,8 @@ export type TrendColor = "green" | "red" | "yellow" | "blue" | "gray";
 
 export interface StatCardData {
   key: string;
-  label: string;
   value: string;
+  unit: string;
   change: string;
   trend: TrendDirection;
   color: TrendColor;
@@ -36,48 +35,21 @@ export interface StatCardData {
 }
 
 interface MetricConfig {
-  label: string;
   icon: LucideIcon;
   isNegative: boolean;
-  formatValue: (item: KPIItem) => string;
 }
 
 //! =============== 常量配置 ===============
 
 const POLLING_INTERVAL = 30_000; // 30 秒
 
-//* 指標配置：label, icon, isNegative (決定顏色邏輯)
+//* 指標配置：icon, isNegative (決定顏色邏輯)
 const METRIC_CONFIG: Record<keyof KPIData, MetricConfig> = {
-  productionOutput: {
-    label: "Total Production",
-    icon: Factory,
-    isNegative: false,
-    formatValue: (item) => `${formatMetricValue(item.value, item.unit)} ${item.unit}`,
-  },
-  defectCount: {
-    label: "Defect Count",
-    icon: AlertTriangle,
-    isNegative: true,
-    formatValue: (item) => `${formatMetricValue(item.value, item.unit)} ${item.unit}`,
-  },
-  yieldRate: {
-    label: "Yield Rate",
-    icon: TrendingUp,
-    isNegative: false,
-    formatValue: (item) => `${formatMetricValue(item.value, item.unit)}${item.unit}`,
-  },
-  downtimeAlerts: {
-    label: "Downtime",
-    icon: Clock,
-    isNegative: true,
-    formatValue: (item) => `${formatMetricValue(item.value, item.unit)} ${item.unit}`,
-  },
-  utilizationRate: {
-    label: "Utilization",
-    icon: Gauge,
-    isNegative: false,
-    formatValue: (item) => `${formatMetricValue(item.value, item.unit)}${item.unit}`,
-  },
+  productionOutput: { icon: Factory, isNegative: false },
+  defectCount: { icon: AlertTriangle, isNegative: true },
+  yieldRate: { icon: TrendingUp, isNegative: false },
+  downtimeAlerts: { icon: Clock, isNegative: true },
+  utilizationRate: { icon: Gauge, isNegative: false },
 };
 
 //! =============== 純函式：資料轉換 ===============
@@ -126,6 +98,13 @@ function recordKPITime(startTime: number): void {
 }
 
 /**
+ * 格式化數值 (千分位)
+ */
+function formatValue(value: number): string {
+  return value.toLocaleString("en-US");
+}
+
+/**
  * API 資料轉換為 UI 格式
  *
  * 💡 包含效能監控：測量轉換時間並寫入 PerformanceStore
@@ -141,8 +120,8 @@ function transformMetrics(data: KPIData): StatCardData[] {
 
       return {
         key,
-        label: config.label,
-        value: config.formatValue(item),
+        value: formatValue(item.value),
+        unit: item.unit,
         change: formatChange(item.trend),
         trend: trendDirection,
         color,

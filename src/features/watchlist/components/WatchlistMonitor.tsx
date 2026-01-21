@@ -1,4 +1,5 @@
 import { useCallback, useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { createPortal } from "react-dom";
 import {
   DndContext,
@@ -43,6 +44,8 @@ export default function WatchlistMonitor({
 }: {
   className?: string;
 }) {
+  const { t } = useTranslation();
+
   // 1️⃣ Store Actions
   const watchedTypes = useWatchlistStore((state) => state.watchedTypes);
   const addType = useWatchlistStore((state) => state.addType);
@@ -128,7 +131,7 @@ export default function WatchlistMonitor({
       <CardHeader className="pb-3 border-b flex-none space-y-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
-            Watchlist Monitor
+            {t("watchlist.title")}
             {/* 動態指示器 */}
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -136,7 +139,7 @@ export default function WatchlistMonitor({
             </span>
           </CardTitle>
           <Badge variant="secondary" className="px-2 font-mono text-xs">
-            3s Polling
+            {t("watchlist.badge", { seconds: 3 })}
           </Badge>
         </div>
 
@@ -149,14 +152,14 @@ export default function WatchlistMonitor({
               aria-expanded={comboboxOpen}
               className="w-full justify-between"
             >
-              Add Machine Type
+              {t("watchlist.actions.addMachine")}
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-full p-0">
             <Command>
-              <CommandInput placeholder="Search machine type..." />
-              <CommandEmpty>No machine type found.</CommandEmpty>
+              <CommandInput placeholder={t("watchlist.actions.searchPlaceholder")} />
+              <CommandEmpty>{t("watchlist.actions.notFound")}</CommandEmpty>
               <CommandGroup>
                 {availableTypes.map((type) => (
                   <CommandItem
@@ -188,7 +191,7 @@ export default function WatchlistMonitor({
           <div className="p-3 space-y-2">
             {isLoading && watchedTypes.length === 0 ? (
               <div className="flex h-40 items-center justify-center text-muted-foreground text-sm">
-                Loading data...
+                {t("watchlist.messages.loading")}
               </div>
             ) : watchedTypes.length > 0 ? (
               <DndContext
@@ -232,9 +235,8 @@ export default function WatchlistMonitor({
                 )}
               </DndContext>
             ) : (
-              <div className="flex h-40 items-center justify-center text-muted-foreground text-sm">
-                No items in watchlist. Use the dropdown above to add machine
-                types.
+              <div className="flex h-40 items-center justify-center text-muted-foreground text-sm text-center px-4">
+                {t("watchlist.messages.empty")}
               </div>
             )}
           </div>

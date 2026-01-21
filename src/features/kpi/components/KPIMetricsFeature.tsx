@@ -7,6 +7,7 @@
  * - 渲染 StatCard Grid
  */
 
+import { useTranslation } from "react-i18next";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,20 +49,22 @@ interface MetricsErrorProps {
 }
 
 function MetricsError({ error, onRetry }: MetricsErrorProps) {
+  const { t } = useTranslation();
+
   return (
     <Card>
       <CardContent className="p-6">
         <div className="flex flex-col items-center justify-center gap-4">
           <AlertCircle className="h-12 w-12 text-destructive" />
           <div className="text-center">
-            <p className="font-medium">無法載入 KPI 資料</p>
+            <p className="font-medium">{t("kpi.messages.loadError")}</p>
             <p className="text-sm text-muted-foreground">
-              {error?.message || "發生未知錯誤"}
+              {error?.message || t("kpi.messages.unknownError")}
             </p>
           </div>
           <Button variant="outline" onClick={onRetry}>
             <RefreshCw className="h-4 w-4 mr-2" />
-            重試
+            {t("common.retry")}
           </Button>
         </div>
       </CardContent>
