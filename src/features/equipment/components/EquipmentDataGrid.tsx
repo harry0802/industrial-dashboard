@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
 import { usePerformanceStore } from "@/stores/usePerformanceStore";
 import { useEquipmentData } from "../hooks/useEquipmentData";
 import { useEquipmentTable } from "../hooks/useEquipmentTable";
@@ -100,12 +101,53 @@ export function EquipmentDataGrid() {
     exportEquipmentToCSV(filteredData);
   };
 
-  // Loading State
+  // Loading State - Skeleton 撐開區塊避免 Layout Shift
   if (isLoading) {
     return (
       <Card>
-        <CardContent className="p-6 text-center text-muted-foreground">
-          Loading equipment data...
+        <CardHeader>
+          <Skeleton className="h-6 w-48" />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Toolbar Skeleton */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex gap-2 flex-1 max-w-xl">
+              <Skeleton className="h-9 w-32" />
+              <Skeleton className="h-9 w-32" />
+              <Skeleton className="h-9 flex-1" />
+            </div>
+            <Skeleton className="h-9 w-24" />
+          </div>
+
+          {/* Table Skeleton */}
+          <div
+            className="rounded-md border"
+            style={{ height: `${TABLE_HEIGHT}px` }}
+          >
+            {/* Header */}
+            <div className="flex border-b bg-muted/50 h-10 items-center px-2 gap-4">
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-28" />
+            </div>
+            {/* Rows */}
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div
+                key={i}
+                className="flex border-b h-12 items-center px-2 gap-4"
+              >
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-5 w-16 rounded-full" />
+                <Skeleton className="h-4 w-12" />
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-4 w-28" />
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
     );

@@ -1,9 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useKPI } from "@/hooks/useKPI";
+import { useKPIMetrics } from "@/features/kpi";
 
 function APITester() {
-  const { data, isLoading, error, refetch } = useKPI();
+  const { data, isLoading, error, refetch } = useKPIMetrics();
 
   return (
     <Card className="p-6">

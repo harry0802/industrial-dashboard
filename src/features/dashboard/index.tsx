@@ -1,25 +1,23 @@
 import DashboardHeader from "@/components/layout/DashboardHeader";
-import { MetricsGrid, WatchlistPanel, PerformanceMonitor } from "./components";
+import { WatchlistPanel, PerformanceMonitor } from "./components";
 import { ProductionTrendFeature } from "@/features/chart";
-import { useDashboardData } from "./hooks/useDashboardData";
+import { KPIMetricsFeature } from "@/features/kpi";
 import { EquipmentDataGrid } from "@/features/equipment";
 
 /**
  * 🎯 DashboardPage - 工業營運儀表板
  *
  * Feature-Sliced Design 架構
- * - components/: Dashboard 專屬組件
- * - charts/: 圖表模組 (TrendChart)
- * - hooks/: 資料獲取邏輯
+ * - KPIMetricsFeature: 頂部 KPI 指標 (獨立 Feature)
+ * - ProductionTrendFeature: 趨勢圖表 (獨立 Feature)
+ * - EquipmentDataGrid: 設備列表 (獨立 Feature)
  *
  * 架構設計:
  * - Header: 固定頂部導航
- * - MetricsGrid: 頂部關鍵指標 (5欄)
+ * - KPIMetricsFeature: 頂部關鍵指標 (5欄)
  * - MainContent: 左右分欄佈局 (Charts + Tables vs Panels)
  */
 function DashboardPage() {
-  const { stats } = useDashboardData();
-
   return (
     <div className="min-h-screen bg-background">
       <DashboardHeader />
@@ -27,7 +25,7 @@ function DashboardPage() {
       <main className="container mx-auto max-w-[1920px] px-4 py-6">
         {/* Top Metrics Section */}
         <section aria-label="Key Performance Indicators">
-          <MetricsGrid stats={stats} />
+          <KPIMetricsFeature />
         </section>
 
         {/* Trend Chart + Watchlist - 固定高度 480px */}
