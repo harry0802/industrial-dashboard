@@ -1,8 +1,8 @@
-import React from 'react';
-import { createColumnHelper } from '@tanstack/react-table';
-import { Badge } from '@/components/ui/badge';
-import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
-import type { Equipment } from '../types';
+import React from "react";
+import { createColumnHelper } from "@tanstack/react-table";
+import { Badge } from "@/components/ui/badge";
+import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import type { Equipment } from "../types";
 
 const columnHelper = createColumnHelper<Equipment>();
 
@@ -22,23 +22,19 @@ export function useEquipmentColumns() {
   return React.useMemo(
     () => [
       // 1. ID
-      columnHelper.accessor('id', {
+      columnHelper.accessor("id", {
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title="ID" />
         ),
         size: 100,
         cell: (info) => {
           const id = info.getValue();
-          return (
-            <span className="font-mono">
-              {id}
-            </span>
-          );
+          return <span className="font-mono">{id}</span>;
         },
       }),
 
       // 2. Machine
-      columnHelper.accessor('machine', {
+      columnHelper.accessor("machine", {
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title="Machine" />
         ),
@@ -46,7 +42,7 @@ export function useEquipmentColumns() {
       }),
 
       // 3. Status
-      columnHelper.accessor('status', {
+      columnHelper.accessor("status", {
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title="Status" />
         ),
@@ -54,9 +50,9 @@ export function useEquipmentColumns() {
         cell: (info) => {
           const status = info.getValue();
           const colorMap = {
-            Normal: 'text-green-600 bg-green-500/10',
-            Warning: 'text-yellow-600 bg-yellow-500/10',
-            Error: 'text-red-600 bg-red-500/10',
+            Normal: "text-green-600 bg-green-500/10",
+            Warning: "text-yellow-600 bg-yellow-500/10",
+            Error: "text-red-600 bg-red-500/10",
           };
           return (
             <Badge variant="outline" className={colorMap[status]}>
@@ -64,11 +60,11 @@ export function useEquipmentColumns() {
             </Badge>
           );
         },
-        filterFn: 'equals', // 單選篩選
+        filterFn: "equals", // 單選篩選
       }),
 
       // 4. Temperature
-      columnHelper.accessor('temperature', {
+      columnHelper.accessor("temperature", {
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title="Temp (°C)" />
         ),
@@ -79,7 +75,7 @@ export function useEquipmentColumns() {
       }),
 
       // 5. RPM
-      columnHelper.accessor('rpm', {
+      columnHelper.accessor("rpm", {
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title="RPM" />
         ),
@@ -90,7 +86,7 @@ export function useEquipmentColumns() {
       }),
 
       // 6. Timestamp
-      columnHelper.accessor('timestamp', {
+      columnHelper.accessor("timestamp", {
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title="Last Update" />
         ),
@@ -105,6 +101,6 @@ export function useEquipmentColumns() {
         },
       }),
     ],
-    []
+    [],
   );
 }

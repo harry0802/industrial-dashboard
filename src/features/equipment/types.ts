@@ -4,27 +4,11 @@
  * =====================================
  */
 
-//! =============== API 回應型別 ===============
+//! =============== Re-export from Zod Schemas (SSOT) ===============
 
-/**
- * Equipment (API Response)
- * @description 後端 API 回傳的設備資料結構 (完全一致)
- */
-export interface Equipment {
-  id: string;
-  machine: string;
-  status: EquipmentStatus;
-  temperature: number;
-  rpm: number;
-  timestamp: string;
-}
+import type { EquipmentStatus as _EquipmentStatus } from "./schemas";
 
-//! =============== 設備狀態類型 ===============
-
-/**
- * 設備狀態
- */
-export type EquipmentStatus = "Normal" | "Warning" | "Error";
+export type { Equipment, EquipmentStatus } from "./schemas";
 
 //! =============== 表格狀態類型 ===============
 
@@ -36,7 +20,7 @@ export interface EquipmentFilters {
   /** 全域搜尋關鍵字 */
   globalFilter: string;
   /** 狀態篩選 (多選) */
-  statusFilter: EquipmentStatus[];
+  statusFilter: _EquipmentStatus[];
   /** 機台類型篩選 (多選) */
   machineTypeFilter: string[];
 }

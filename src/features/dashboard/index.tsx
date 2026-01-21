@@ -2,7 +2,7 @@ import DashboardHeader from "@/components/layout/DashboardHeader";
 import { WatchlistPanel, PerformanceMonitor } from "./components";
 import { ProductionTrendFeature } from "@/features/chart";
 import { KPIMetricsFeature } from "@/features/kpi";
-import { EquipmentDataGrid } from "@/features/equipment";
+import { EquipmentFeature } from "@/features/equipment";
 
 /**
  * 🎯 DashboardPage - 工業營運儀表板
@@ -10,7 +10,7 @@ import { EquipmentDataGrid } from "@/features/equipment";
  * Feature-Sliced Design 架構
  * - KPIMetricsFeature: 頂部 KPI 指標 (獨立 Feature)
  * - ProductionTrendFeature: 趨勢圖表 (獨立 Feature)
- * - EquipmentDataGrid: 設備列表 (獨立 Feature)
+ * - EquipmentFeature: 設備列表 (獨立 Feature)
  *
  * 架構設計:
  * - Header: 固定頂部導航
@@ -41,7 +41,7 @@ function DashboardPage() {
         {/* Equipment Table + Performance Monitor */}
         <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-5">
           <div className="space-y-4 lg:col-span-4">
-            <EquipmentDataGrid />
+            <EquipmentFeature />
           </div>
           <div className="lg:col-span-1">
             <PerformanceMonitor />

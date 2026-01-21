@@ -69,7 +69,7 @@ export default function WatchlistMonitor({
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 8 },
-    })
+    }),
   );
 
   // 7️⃣ 拖曳開始
@@ -94,7 +94,7 @@ export default function WatchlistMonitor({
       const newOrder = arrayMove(watchedTypes, oldIndex, newIndex);
       setTypes(newOrder);
     },
-    [watchedTypes, setTypes]
+    [watchedTypes, setTypes],
   );
 
   // 9️⃣ 拖曳取消
@@ -107,7 +107,7 @@ export default function WatchlistMonitor({
     (type: string) => {
       removeType(type);
     },
-    [removeType]
+    [removeType],
   );
 
   // 1️⃣1️⃣ Combobox 選擇處理
@@ -120,7 +120,7 @@ export default function WatchlistMonitor({
       }
       setComboboxOpen(false);
     },
-    [watchedTypes, addType, removeType]
+    [watchedTypes, addType, removeType],
   );
 
   return (
@@ -169,7 +169,7 @@ export default function WatchlistMonitor({
                         "mr-2 h-4 w-4",
                         watchedTypes.includes(type)
                           ? "opacity-100"
-                          : "opacity-0"
+                          : "opacity-0",
                       )}
                     />
                     {type}
@@ -228,7 +228,7 @@ export default function WatchlistMonitor({
                       />
                     ) : null}
                   </DragOverlay>,
-                  document.body
+                  document.body,
                 )}
               </DndContext>
             ) : (
