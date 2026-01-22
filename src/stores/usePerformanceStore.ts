@@ -75,7 +75,7 @@ export const usePerformanceStore = create<PerformanceState>()(
             },
           }),
           false,
-          `recordMetric/${name}` // Action Name for DevTools
+          `recordMetric/${name}`, // Action Name for DevTools
         );
       },
 
@@ -83,8 +83,8 @@ export const usePerformanceStore = create<PerformanceState>()(
         set({ metrics: {} }, false, "clearMetrics");
       },
     }),
-    { name: STORE_CONFIG.NAME }
-  )
+    { name: STORE_CONFIG.NAME },
+  ),
 );
 
 //! =============== 4. Custom Hooks (Selector Pattern) ===============

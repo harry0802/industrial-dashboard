@@ -115,13 +115,17 @@ function PerformanceMonitor({ className }: PerformanceMonitorProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Activity className="h-4 w-4" />
-            <CardTitle className="text-base">{t("performance.title")}</CardTitle>
+            <CardTitle className="text-base">
+              {t("performance.title")}
+            </CardTitle>
           </div>
           <Badge
             variant="secondary"
             className="px-2 py-0.5 text-xs font-normal"
           >
-            {t("performance.units.metricsCount", { count: metricEntries.length })}
+            {t("performance.units.metricsCount", {
+              count: metricEntries.length,
+            })}
           </Badge>
         </div>
       </CardHeader>
