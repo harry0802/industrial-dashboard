@@ -1,0 +1,56 @@
+/**
+ * =====================================
+ * 📝 Equipment Types - 設備資料型別定義
+ * =====================================
+ */
+
+//! =============== Re-export from Zod Schemas (SSOT) ===============
+
+import type { EquipmentStatus as _EquipmentStatus } from "./schemas";
+
+export type { Equipment, EquipmentStatus } from "./schemas";
+
+//! =============== 表格狀態類型 ===============
+
+/**
+ * 表格篩選狀態
+ * @interface EquipmentFilters
+ */
+export interface EquipmentFilters {
+  /** 全域搜尋關鍵字 */
+  globalFilter: string;
+  /** 狀態篩選 (多選) */
+  statusFilter: _EquipmentStatus[];
+  /** 機台類型篩選 (多選) */
+  machineTypeFilter: string[];
+}
+
+/**
+ * 欄位排序狀態
+ * @interface EquipmentSorting
+ */
+export interface EquipmentSorting {
+  /** 欄位 ID */
+  id: string;
+  /** 是否降序排列 */
+  desc: boolean;
+}
+
+//! =============== 搜尋範圍類型 ===============
+
+/**
+ * 搜尋範圍
+ * @description 定義搜尋可套用的欄位範圍
+ */
+export type SearchScope = "all" | "id" | "machine" | "status";
+
+/**
+ * 搜尋範圍選項
+ * @description 用於 Select 元件的選項列表，使用 i18n key
+ */
+export const SEARCH_SCOPE_OPTIONS = [
+  { value: "all" as const, labelKey: "equipment.scopes.all" },
+  { value: "id" as const, labelKey: "equipment.scopes.id" },
+  { value: "machine" as const, labelKey: "equipment.scopes.machine" },
+  { value: "status" as const, labelKey: "equipment.scopes.status" },
+] as const;
