@@ -174,6 +174,7 @@ function TrendChart({ data }) {
   );
 }
 ```
+[ Chart 組件有問題 ，已暫時解決 ](https://github.com/harry0802/industrial-dashboard/issues/1)
 
 ```tsx
 // EquipmentTable 使用範例
