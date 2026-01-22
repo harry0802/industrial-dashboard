@@ -117,61 +117,118 @@ export function ProductionTrendFeature({ className, chartOptions }: Props) {
   //* 動態產生 ChartConfig (i18n)
   const chartConfig = useMemo<ChartConfig>(
     () => ({
-      production: { label: t("chart.series.production"), color: CHART_COLORS.production },
-      defectCount: { label: t("chart.series.defectCount"), color: CHART_COLORS.defectCount },
-      downtime: { label: t("chart.series.downtime"), color: CHART_COLORS.downtime },
+      production: {
+        label: t("chart.series.production"),
+        color: CHART_COLORS.production,
+      },
+      defectCount: {
+        label: t("chart.series.defectCount"),
+        color: CHART_COLORS.defectCount,
+      },
+      downtime: {
+        label: t("chart.series.downtime"),
+        color: CHART_COLORS.downtime,
+      },
       yield: { label: t("chart.series.yield"), color: CHART_COLORS.yield },
-      efficiency: { label: t("chart.series.efficiency"), color: CHART_COLORS.efficiency },
+      efficiency: {
+        label: t("chart.series.efficiency"),
+        color: CHART_COLORS.efficiency,
+      },
     }),
-    [t]
+    [t],
   );
 
   //* X 軸時間格式化
   const formatXAxis = useCallback((value: string) => value, []);
 
   //* 匯出功能 - Theme-aware 背景色
-  const exportBackgroundColor = resolvedTheme === "dark" ? "#020817" : "#ffffff";
+  const exportBackgroundColor =
+    resolvedTheme === "dark" ? "#020817" : "#ffffff";
 
-  const handleExportPNG = useCallback(async () => {
-    if (!chartContainerRef.current) return;
+  //! =============== CSS 變數收集 ===============
+  const getChartStyles = useCallback(() => {
+    const computedStyle = getComputedStyle(document.documentElement);
 
-    setIsExporting(true);
-    try {
-      const dataUrl = await toPng(chartContainerRef.current, {
-        backgroundColor: exportBackgroundColor,
-        pixelRatio: 2,
-      });
+    // Tailwind 全域變數 (修復文字與軸線顏色)
+    const globalVars: Record<string, string> = {
+      "--background": computedStyle.getPropertyValue("--background"),
+      "--foreground": computedStyle.getPropertyValue("--foreground"),
+      "--muted": computedStyle.getPropertyValue("--muted"),
+      "--muted-foreground":
+        computedStyle.getPropertyValue("--muted-foreground"),
+      "--border": computedStyle.getPropertyValue("--border"),
+      "--card": computedStyle.getPropertyValue("--card"),
+      "--card-foreground": computedStyle.getPropertyValue("--card-foreground"),
+      "--popover": computedStyle.getPropertyValue("--popover"),
+      "--popover-foreground": computedStyle.getPropertyValue(
+        "--popover-foreground",
+      ),
+    };
 
-      const link = document.createElement("a");
-      link.download = `production-trend-${Date.now()}.png`;
-      link.href = dataUrl;
-      link.click();
-    } catch (err) {
-      console.error("Export PNG failed:", err);
-    } finally {
-      setIsExporting(false);
+    // Chart 專用變數 (修復線條顏色)
+    const chartVars: Record<string, string> = {};
+    Object.entries(chartConfig).forEach(([key, config]) => {
+      if (config.color) {
+        chartVars[`--color-${key}`] = config.color;
+      }
+    });
+
+    return { ...globalVars, ...chartVars };
+  }, [chartConfig]);
+
+  //! =============== 🔥 修復後的匯出邏輯 ===============
+  const handleExport = useCallback(
+    async (type: "png" | "svg") => {
+      if (!chartContainerRef.current) return;
+
+      setIsExporting(true);
+
+      const styleElement = document.createElement("style");
+      const styles = getChartStyles();
+
+      styleElement.textContent = `
+    * {
+      ${Object.entries(styles)
+        .map(([key, value]) => `${key}: ${value};`)
+        .join("\n      ")}
     }
-  }, [exportBackgroundColor]);
-
-  const handleExportSVG = useCallback(async () => {
-    if (!chartContainerRef.current) return;
-
-    setIsExporting(true);
-    try {
-      const dataUrl = await toSvg(chartContainerRef.current, {
-        backgroundColor: exportBackgroundColor,
-      });
-
-      const link = document.createElement("a");
-      link.download = `production-trend-${Date.now()}.svg`;
-      link.href = dataUrl;
-      link.click();
-    } catch (err) {
-      console.error("Export SVG failed:", err);
-    } finally {
-      setIsExporting(false);
+    
+    /* 強制所有文字為黑色 */
+    * {
+      color: #000000 !important;
     }
-  }, [exportBackgroundColor]);
+  `;
+
+      chartContainerRef.current.appendChild(styleElement);
+
+      try {
+        const options = {
+          backgroundColor: exportBackgroundColor,
+          pixelRatio: 2,
+          cacheBust: true,
+          filter: (node: HTMLElement) => {
+            return !node.classList?.contains("exclude-from-export");
+          },
+        };
+
+        const dataUrl =
+          type === "png"
+            ? await toPng(chartContainerRef.current, options)
+            : await toSvg(chartContainerRef.current, options);
+
+        const link = document.createElement("a");
+        link.download = `production-trend-${Date.now()}.${type}`;
+        link.href = dataUrl;
+        link.click();
+      } catch (err) {
+        console.error(`Export ${type.toUpperCase()} failed:`, err);
+      } finally {
+        chartContainerRef.current.removeChild(styleElement);
+        setIsExporting(false);
+      }
+    },
+    [exportBackgroundColor, getChartStyles],
+  );
 
   // X 軸配置 - memoized
   const xAxisConfig = useMemo(
@@ -221,7 +278,9 @@ export function ProductionTrendFeature({ className, chartOptions }: Props) {
         <CardContent className="pt-4 pb-2">
           {/* Header */}
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold">{t("chart.messages.analysisTitle")}</h3>
+            <h3 className="text-lg font-semibold">
+              {t("chart.messages.analysisTitle")}
+            </h3>
 
             <div className="flex items-center gap-2">
               {/* 🔥 IoC: Reset 按鈕現在可以自由放在 Header */}
@@ -258,10 +317,10 @@ export function ProductionTrendFeature({ className, chartOptions }: Props) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={handleExportPNG}>
+                  <DropdownMenuItem onClick={() => handleExport("png")}>
                     {t("chart.actions.exportPng")}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleExportSVG}>
+                  <DropdownMenuItem onClick={() => handleExport("svg")}>
                     {t("chart.actions.exportSvg")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
