@@ -57,7 +57,9 @@ function LegendContent({
               style={{ backgroundColor: entry.color }}
             />
             <span className={cn(isHidden && "line-through")}>
-              {typeof itemConfig?.label === 'string' ? itemConfig.label : entry.value}
+              {typeof itemConfig?.label === "string"
+                ? itemConfig.label
+                : entry.value}
             </span>
           </button>
         );

@@ -26,7 +26,12 @@ interface TooltipContentProps {
   config: Record<string, { label?: React.ReactNode; color?: string }>;
 }
 
-function TooltipContent({ active, payload, label, config }: TooltipContentProps) {
+function TooltipContent({
+  active,
+  payload,
+  label,
+  config,
+}: TooltipContentProps) {
   if (!active || !payload?.length) return null;
 
   return (
@@ -50,11 +55,15 @@ function TooltipContent({ active, payload, label, config }: TooltipContentProps)
                     style={{ backgroundColor: item.color }}
                   />
                   <span className="text-muted-foreground">
-                    {typeof itemConfig?.label === 'string' ? itemConfig.label : item.name}
+                    {typeof itemConfig?.label === "string"
+                      ? itemConfig.label
+                      : item.name}
                   </span>
                 </div>
                 <span className="text-foreground font-mono font-medium tabular-nums">
-                  {typeof item.value === 'number' ? item.value.toLocaleString() : item.value}
+                  {typeof item.value === "number"
+                    ? item.value.toLocaleString()
+                    : item.value}
                 </span>
               </div>
             );
@@ -73,25 +82,21 @@ export interface ChartTooltipProps {
   indicator?: "dot" | "line" | "dashed";
 }
 
-export function ChartTooltip({
-  cursor = false,
-}: ChartTooltipProps) {
+export function ChartTooltip({ cursor = false }: ChartTooltipProps) {
   const { config } = useChartData();
 
   const content = useMemo(
-    () =>
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (props: TooltipProps<number, string>) => {
-        const { active, payload, label } = props;
-        return (
-          <TooltipContent
-            active={active}
-            payload={payload as PayloadItem[] | undefined}
-            label={label}
-            config={config}
-          />
-        );
-      },
+    () => (props: TooltipProps<number, string>) => {
+      const { active, payload, label } = props;
+      return (
+        <TooltipContent
+          active={active}
+          payload={payload as PayloadItem[] | undefined}
+          label={label}
+          config={config}
+        />
+      );
+    },
     [config],
   );
 

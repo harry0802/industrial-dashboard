@@ -51,7 +51,9 @@ export function ChartSeries({
     yAxisId,
     stroke: strokeColor,
     fill: fillColor,
-    name: name || (typeof seriesConfig?.label === "string" ? seriesConfig.label : dataKey),
+    name:
+      name ||
+      (typeof seriesConfig?.label === "string" ? seriesConfig.label : dataKey),
     isAnimationActive,
     hide: isHidden,
   };
