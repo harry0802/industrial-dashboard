@@ -10,6 +10,9 @@ export const en = {
     dashboard: "Dashboard",
     equipment: "Equipment",
     settings: "Settings",
+    language: "Language",
+    darkMode: "Dark Mode",
+    lightMode: "Light Mode",
   },
 
   // KPI Metrics
@@ -73,6 +76,7 @@ export const en = {
       exportPng: "Export PNG",
       exportSvg: "Export SVG",
       retry: "Retry",
+      resetZoom: "Reset Zoom",
     },
     // Messages
     messages: {

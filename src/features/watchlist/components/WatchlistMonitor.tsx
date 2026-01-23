@@ -128,7 +128,7 @@ export default function WatchlistMonitor({
 
   return (
     <Card className={cn("h-full flex flex-col shadow-md bg-card", className)}>
-      <CardHeader className="pb-3 border-b flex-none space-y-3">
+      <CardHeader className="pb-2 md:pb-3 border-b flex-none space-y-2 md:space-y-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
             {t("watchlist.title")}
@@ -188,7 +188,7 @@ export default function WatchlistMonitor({
       <CardContent className="flex-1 min-h-0 p-0 overflow-hidden relative">
         {/* ✨ ScrollArea 必須有 h-full */}
         <ScrollArea className="h-full">
-          <div className="p-3 space-y-2">
+          <div className="p-2 md:p-3 space-y-1.5 md:space-y-2">
             {isLoading && watchedTypes.length === 0 ? (
               <div className="flex h-40 items-center justify-center text-muted-foreground text-sm">
                 {t("watchlist.messages.loading")}

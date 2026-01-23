@@ -19,7 +19,7 @@ import { StatCard } from "./StatCard";
 
 function MetricsSkeleton() {
   return (
-    <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
+    <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-5">
       {Array.from({ length: 5 }).map((_, i) => (
         <Card key={i}>
           <CardContent className="p-4">
@@ -93,7 +93,7 @@ export function KPIMetricsFeature({ className = "" }: KPIMetricsFeatureProps) {
 
   return (
     <div
-      className={`grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5 ${className}`}
+      className={`grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-5 ${className}`}
     >
       {data.map((stat) => (
         <StatCard key={stat.key} stat={stat} />

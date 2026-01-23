@@ -276,13 +276,13 @@ export function ProductionTrendFeature({ className, chartOptions }: Props) {
     <Chart.Root data={data} config={chartConfig} xDataKey="time">
       <Card className={cn("overflow-hidden", className)}>
         <CardContent className="pt-4 pb-2">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold">
+          {/* Header - 響應式佈局 */}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-3">
+            <h3 className="text-base md:text-lg font-semibold">
               {t("chart.messages.analysisTitle")}
             </h3>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               {/* 🔥 IoC: Reset 按鈕現在可以自由放在 Header */}
               <Chart.ResetButton className="h-8 text-xs" />
 

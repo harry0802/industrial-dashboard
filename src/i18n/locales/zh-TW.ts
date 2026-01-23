@@ -10,6 +10,9 @@ export const zhTW = {
     dashboard: "儀表板",
     equipment: "設備監控",
     settings: "系統設定",
+    language: "語言",
+    darkMode: "深色模式",
+    lightMode: "淺色模式",
   },
 
   // KPI Metrics
@@ -73,6 +76,7 @@ export const zhTW = {
       exportPng: "匯出 PNG",
       exportSvg: "匯出 SVG",
       retry: "重試",
+      resetZoom: "重置縮放",
     },
     // Messages
     messages: {

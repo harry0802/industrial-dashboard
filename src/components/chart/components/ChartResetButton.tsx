@@ -7,6 +7,7 @@
  */
 
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useChartInteraction } from "../context/ChartContext";
@@ -28,6 +29,7 @@ export function ChartResetButton({
   variant = "outline",
   size = "sm",
 }: ChartResetButtonProps) {
+  const { t } = useTranslation();
   const { isZoomed, resetZoom } = useChartInteraction();
 
   // 非縮放狀態時不渲染
@@ -43,7 +45,7 @@ export function ChartResetButton({
       {children ?? (
         <>
           <RotateCcw className="h-3.5 w-3.5" />
-          重置縮放
+          {t("chart.actions.resetZoom")}
         </>
       )}
     </Button>

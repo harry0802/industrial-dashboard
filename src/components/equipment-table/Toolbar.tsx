@@ -76,14 +76,14 @@ export function EquipmentTableToolbar({
   };
 
   return (
-    <div className="flex items-center justify-between gap-2">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
       {/* 左側: Status Filter + Search */}
-      <div className="flex gap-2 flex-1 max-w-xl">
+      <div className="flex flex-wrap gap-2 flex-1 sm:max-w-xl">
         <Select
           value={currentStatusFilter}
           onValueChange={(v) => setStatusFilter(v as EquipmentStatus | "all")}
         >
-          <SelectTrigger className="w-32">
+          <SelectTrigger className="w-[calc(50%-4px)] sm:w-28">
             <SelectValue placeholder={t("equipment.toolbar.allStatus")} />
           </SelectTrigger>
           <SelectContent>
@@ -95,7 +95,7 @@ export function EquipmentTableToolbar({
         </Select>
 
         <Select value={scope} onValueChange={(v) => setScope(v as SearchScope)}>
-          <SelectTrigger className="w-32">
+          <SelectTrigger className="w-[calc(50%-4px)] sm:w-28">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -111,16 +111,16 @@ export function EquipmentTableToolbar({
           placeholder={t("equipment.toolbar.searchPlaceholder", { scope: t(`equipment.scopes.${scope}`) })}
           value={searchValue}
           onChange={(e) => setSearchValue(e.target.value)}
-          className="h-9"
+          className="h-9 w-full sm:flex-1 sm:min-w-[120px]"
         />
       </div>
 
       {/* 右側: 控制按鈕 */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 justify-end">
         {hasActiveFilters && (
           <Button variant="ghost" size="sm" onClick={handleReset}>
-            <X className="h-4 w-4 mr-2" />
-            {t("equipment.toolbar.reset")}
+            <X className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">{t("equipment.toolbar.reset")}</span>
           </Button>
         )}
 
@@ -128,8 +128,8 @@ export function EquipmentTableToolbar({
 
         {!hideExport && (
           <Button variant="outline" size="sm" onClick={exportCSV}>
-            <Download className="h-4 w-4 mr-2" />
-            {t("equipment.toolbar.exportCsv")}
+            <Download className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">{t("equipment.toolbar.exportCsv")}</span>
           </Button>
         )}
 

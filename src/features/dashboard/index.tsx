@@ -41,28 +41,28 @@ function DashboardPage() {
     <div className="min-h-screen bg-background">
       <DashboardHeader />
 
-      <main className="container mx-auto max-w-[1920px] px-4 py-6">
+      <main className="container mx-auto max-w-[1920px] px-3 py-4 md:px-4 md:py-6">
         {/* Top Metrics Section */}
-        <section aria-label="Key Performance Indicators">
+        <section id="section-dashboard" aria-label="Key Performance Indicators" className="scroll-mt-16">
           <KPIMetricsFeature />
         </section>
 
-        {/* Trend Chart + Watchlist - 固定高度 480px */}
-        <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-5">
-          <div className="lg:col-span-4 h-[500px]">
+        {/* Trend Chart + Watchlist - 響應式高度 */}
+        <section className="mt-4 md:mt-6 grid grid-cols-1 gap-3 md:gap-4 lg:grid-cols-5">
+          <div className="lg:col-span-4 lg:h-[500px]">
             <ProductionTrendFeature className="h-full" />
           </div>
-          <div className="lg:col-span-1 h-[500px]">
+          <div className="lg:col-span-1 max-h-[500px] lg:h-[500px]">
             <WatchlistPanel className="h-full" />
           </div>
         </section>
 
         {/* Equipment Table + Performance Monitor */}
-        <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-5">
-          <div className="space-y-4 lg:col-span-4">
+        <section id="section-equipment" className="mt-4 md:mt-6 grid grid-cols-1 gap-3 md:gap-4 lg:grid-cols-5 scroll-mt-16">
+          <div className="space-y-3 md:space-y-4 lg:col-span-4">
             <EquipmentFeature />
           </div>
-          <div className="lg:col-span-1">
+          <div id="section-settings" className="lg:col-span-1 min-h-[200px] scroll-mt-16">
             <PerformanceMonitor />
           </div>
         </section>

@@ -10,6 +10,9 @@ export const ja = {
     dashboard: "ダッシュボード",
     equipment: "設備監視",
     settings: "設定",
+    language: "言語",
+    darkMode: "ダークモード",
+    lightMode: "ライトモード",
   },
 
   // KPI Metrics
@@ -73,6 +76,7 @@ export const ja = {
       exportPng: "PNG エクスポート",
       exportSvg: "SVG エクスポート",
       retry: "再試行",
+      resetZoom: "ズームリセット",
     },
     // Messages
     messages: {
