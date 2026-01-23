@@ -2,6 +2,40 @@
 
 基於 **Compound Components** 模式設計的圖表組件庫，實現 **IoC (控制反轉)**。
 
+---
+
+## ⚠️ 架構說明 (重要)
+
+本組件庫使用 **Render Hijacking** 模式封裝 Recharts。
+
+### 為什麼需要這樣做？
+
+Recharts 的 `ComposedChart` 會直接檢查 `props.children` 的 `type`，在 Production Build (Tree-shaking 後) 會過濾掉「不認識」的子組件。這導致直接封裝的組件在 Dev 環境正常，但 Production 環境失效。
+
+### 組件分類
+
+| 類型         | 組件                                                           | 說明                                   |
+| ------------ | -------------------------------------------------------------- | -------------------------------------- |
+| **配置組件** | `Chart.Series`, `Chart.Tooltip`, `Chart.Legend`, `Chart.Brush` | 不渲染任何內容，只是 Props 載體        |
+| **渲染組件** | `Chart.Canvas`                                                 | 攔截配置組件，轉譯為 Recharts 原生組件 |
+| **獨立組件** | `Chart.Root`, `Chart.ResetButton`, `Chart.Gradient`            | 正常 React 組件                        |
+
+### 檔案結構
+
+```
+components/
+├── ChartCanvas.tsx      # 核心：Render Hijacking 邏輯
+├── ChartSeries.tsx      # 配置組件 (return null)
+├── ChartTooltip.tsx     # 配置組件 (return null)
+├── ChartLegend.tsx      # 配置組件 (return null)
+├── ChartBrush.tsx       # 配置組件 (return null)
+└── ...
+utils/
+└── renderers.ts         # 所有渲染函數 (renderSeries, renderTooltip 等)
+```
+
+---
+
 ## 核心概念
 
 - **使用者決定** Reset 按鈕放哪
@@ -25,7 +59,6 @@ function MyChart({ data }) {
   return (
     <Chart.Root data={data} config={config} xDataKey="time">
       <Chart.ResetButton /> {/* 可放任意位置 */}
-
       <Chart.Canvas height={400}>
         <XAxis dataKey="time" />
         <YAxis />
@@ -50,14 +83,14 @@ function MyChart({ data }) {
 
 Context Provider，必須包裹所有其他 Chart 組件。
 
-| Prop | Type | Required | Description |
-|------|------|----------|-------------|
-| `data` | `Record<string, unknown>[]` | ✅ | 圖表資料 |
-| `config` | `ChartConfig` | ✅ | 顏色與標籤配置 |
-| `xDataKey` | `string` | ✅ | X 軸資料鍵 |
-| `zoomSpeed` | `number` | | 滾輪縮放速度 (預設 0.1) |
-| `range` | `RangeState` | | 外部控制範圍 (Controlled) |
-| `onRangeChange` | `(range) => void` | | 範圍變化回調 |
+| Prop            | Type                        | Required | Description               |
+| --------------- | --------------------------- | -------- | ------------------------- |
+| `data`          | `Record<string, unknown>[]` | ✅       | 圖表資料                  |
+| `config`        | `ChartConfig`               | ✅       | 顏色與標籤配置            |
+| `xDataKey`      | `string`                    | ✅       | X 軸資料鍵                |
+| `zoomSpeed`     | `number`                    |          | 滾輪縮放速度 (預設 0.1)   |
+| `range`         | `RangeState`                |          | 外部控制範圍 (Controlled) |
+| `onRangeChange` | `(range) => void`           |          | 範圍變化回調              |
 
 ---
 
@@ -65,11 +98,11 @@ Context Provider，必須包裹所有其他 Chart 組件。
 
 渲染 `ResponsiveContainer` + `ComposedChart`，處理滑鼠事件。
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `height` | `number` | `400` | 圖表高度 |
-| `showGrid` | `boolean` | `true` | 顯示網格線 |
-| `margin` | `object` | `{top:10,right:10,left:0,bottom:0}` | 邊距 |
+| Prop       | Type      | Default                             | Description |
+| ---------- | --------- | ----------------------------------- | ----------- |
+| `height`   | `number`  | `400`                               | 圖表高度    |
+| `showGrid` | `boolean` | `true`                              | 顯示網格線  |
+| `margin`   | `object`  | `{top:10,right:10,left:0,bottom:0}` | 邊距        |
 
 **Children**: 支援原生 Recharts 組件 (`XAxis`, `YAxis`) 和 Chart 組件。
 
@@ -79,14 +112,14 @@ Context Provider，必須包裹所有其他 Chart 組件。
 
 渲染資料系列 (Line / Area / Bar)。
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `dataKey` | `string` | ✅ | 資料鍵 |
-| `type` | `'line' \| 'area' \| 'bar'` | `'line'` | 圖表類型 |
-| `yAxisId` | `'left' \| 'right'` | `'left'` | Y 軸 ID |
-| `color` | `string` | | 覆蓋 config 顏色 |
-| `fillOpacity` | `number` | | 填充透明度 |
-| `strokeWidth` | `number` | `2` | 線條寬度 |
+| Prop          | Type                        | Default  | Description      |
+| ------------- | --------------------------- | -------- | ---------------- |
+| `dataKey`     | `string`                    | ✅       | 資料鍵           |
+| `type`        | `'line' \| 'area' \| 'bar'` | `'line'` | 圖表類型         |
+| `yAxisId`     | `'left' \| 'right'`         | `'left'` | Y 軸 ID          |
+| `color`       | `string`                    |          | 覆蓋 config 顏色 |
+| `fillOpacity` | `number`                    |          | 填充透明度       |
+| `strokeWidth` | `number`                    | `2`      | 線條寬度         |
 
 ---
 
@@ -94,11 +127,11 @@ Context Provider，必須包裹所有其他 Chart 組件。
 
 縮放重置按鈕，**只有在 `isZoomed` 時才渲染**。
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `variant` | `'outline' \| 'ghost' \| 'secondary'` | `'outline'` | 按鈕變體 |
-| `size` | `'sm' \| 'default' \| 'lg'` | `'sm'` | 按鈕尺寸 |
-| `children` | `ReactNode` | | 自訂內容 |
+| Prop       | Type                                  | Default     | Description |
+| ---------- | ------------------------------------- | ----------- | ----------- |
+| `variant`  | `'outline' \| 'ghost' \| 'secondary'` | `'outline'` | 按鈕變體    |
+| `size`     | `'sm' \| 'default' \| 'lg'`           | `'sm'`      | 按鈕尺寸    |
+| `children` | `ReactNode`                           |             | 自訂內容    |
 
 ---
 
@@ -106,10 +139,10 @@ Context Provider，必須包裹所有其他 Chart 組件。
 
 底部範圍選擇器，**自動雙向綁定** Context 的 `range`。
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `height` | `number` | `30` | 高度 |
-| `previewDataKey` | `string` | | 預覽線條的 dataKey |
+| Prop             | Type     | Default | Description        |
+| ---------------- | -------- | ------- | ------------------ |
+| `height`         | `number` | `30`    | 高度               |
+| `previewDataKey` | `string` |         | 預覽線條的 dataKey |
 
 ---
 
@@ -117,9 +150,9 @@ Context Provider，必須包裹所有其他 Chart 組件。
 
 shadcn 風格的 Tooltip。
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `cursor` | `boolean \| object` | `false` | 游標樣式 |
+| Prop     | Type                | Default | Description |
+| -------- | ------------------- | ------- | ----------- |
+| `cursor` | `boolean \| object` | `false` | 游標樣式    |
 
 ---
 
@@ -127,10 +160,10 @@ shadcn 風格的 Tooltip。
 
 可點擊切換的圖例。
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `enableToggle` | `boolean` | `true` | 點擊切換 series 顯示 |
-| `verticalAlign` | `'top' \| 'middle' \| 'bottom'` | `'bottom'` | 垂直對齊 |
+| Prop            | Type                            | Default    | Description          |
+| --------------- | ------------------------------- | ---------- | -------------------- |
+| `enableToggle`  | `boolean`                       | `true`     | 點擊切換 series 顯示 |
+| `verticalAlign` | `'top' \| 'middle' \| 'bottom'` | `'bottom'` | 垂直對齊             |
 
 ---
 
@@ -140,7 +173,12 @@ SVG 漸層定義，用於 Area 填充。
 
 ```tsx
 <Chart.Canvas>
-  <Chart.Gradient id="myGradient" color="#3b82f6" startOpacity={0.8} endOpacity={0} />
+  <Chart.Gradient
+    id="myGradient"
+    color="#3b82f6"
+    startOpacity={0.8}
+    endOpacity={0}
+  />
   <Chart.Series dataKey="value" type="area" fill="url(#myGradient)" />
 </Chart.Canvas>
 ```
@@ -154,7 +192,8 @@ SVG 漸層定義，用於 Area 填充。
 同時取得 Data + Interaction context。
 
 ```tsx
-const { data, config, range, isZoomed, resetZoom, hiddenSeries, toggleSeries } = useChart();
+const { data, config, range, isZoomed, resetZoom, hiddenSeries, toggleSeries } =
+  useChart();
 ```
 
 ### `useChartData()`
@@ -170,21 +209,29 @@ const { data, xDataKey, config, chartId } = useChartData();
 只取得互動相關 context。
 
 ```tsx
-const { range, isZoomed, setRange, resetZoom, selection, hiddenSeries, toggleSeries } = useChartInteraction();
+const {
+  range,
+  isZoomed,
+  setRange,
+  resetZoom,
+  selection,
+  hiddenSeries,
+  toggleSeries,
+} = useChartInteraction();
 ```
 
 ---
 
 ## 互動功能
 
-| 功能 | 操作方式 |
-|------|----------|
-| **滾輪縮放** | 滑鼠滾輪上下滾動 |
-| **觸控縮放** | 雙指捏合 |
-| **拖曳選取** | 滑鼠按住拖曳選擇區域 |
-| **Brush 選取** | 拖曳底部 Brush 控制範圍 |
-| **圖例切換** | 點擊圖例隱藏/顯示 series |
-| **重置縮放** | 點擊 ResetButton |
+| 功能           | 操作方式                 |
+| -------------- | ------------------------ |
+| **滾輪縮放**   | 滑鼠滾輪上下滾動         |
+| **觸控縮放**   | 雙指捏合                 |
+| **拖曳選取**   | 滑鼠按住拖曳選擇區域     |
+| **Brush 選取** | 拖曳底部 Brush 控制範圍  |
+| **圖例切換**   | 點擊圖例隱藏/顯示 series |
+| **重置縮放**   | 點擊 ResetButton         |
 
 ---
 
@@ -203,7 +250,7 @@ const [range, setRange] = useState({ startIndex: 0, endIndex: 100 });
   onRangeChange={setRange}
 >
   ...
-</Chart.Root>
+</Chart.Root>;
 ```
 
 ### 自訂 Reset 按鈕
